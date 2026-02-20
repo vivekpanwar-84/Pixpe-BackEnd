@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Pixpe Backend — API Test Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Fira+Code:wght@400;500&display=swap');
+  :root {
+    --primary: #6366f1;
+    --primary-dark: #4f46e5;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --info: #3b82f6;
+    --dark: #0f172a;
+    --card-bg: #1e293b;
+    --border: #334155;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --code-bg: #0f172a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #0a0f1e;
+    color: var(--text);
+    padding: 20px;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .page {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #06b6d4 100%);
+    border-radius: 16px;
+    padding: 36px 40px;
+    margin-bottom: 28px;
+    text-align: center;
+  }
+  .header h1 { font-size: 28px; font-weight: 700; color: #fff; letter-spacing: -0.5px; }
+  .header p { color: rgba(255,255,255,0.8); margin-top: 6px; font-size: 14px; }
+  .base-url {
+    display: inline-block;
+    background: rgba(0,0,0,0.3);
+    color: #a5f3fc;
+    font-family: 'Fira Code', monospace;
+    font-size: 14px;
+    padding: 6px 16px;
+    border-radius: 20px;
+    margin-top: 12px;
+  }
+
+  /* ── FLOW BANNER ── */
+  .flow {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 28px;
+  }
+  .flow h3 { color: var(--primary); font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+  .flow-steps {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+  }
+  .flow-step {
+    background: linear-gradient(135deg, var(--primary), #8b5cf6);
+    color: #fff;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .flow-arrow { color: var(--muted); font-size: 16px; }
+
+  /* ── SECTION ── */
+  .section {
+    margin-bottom: 32px;
+  }
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--border);
+  }
+  .section-icon {
+    font-size: 20px;
+  }
+  .section-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+  }
+  .section-subtitle {
+    font-size: 11px;
+    color: var(--muted);
+    margin-left: auto;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    padding: 2px 8px;
+    border-radius: 10px;
+  }
+
+  /* ── ENDPOINT CARD ── */
+  .endpoint {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+  .endpoint-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: rgba(255,255,255,0.03);
+    border-bottom: 1px solid var(--border);
+  }
+  .method {
+    font-family: 'Fira Code', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 5px;
+    letter-spacing: 0.5px;
+    min-width: 50px;
+    text-align: center;
+  }
+  .GET    { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
+  .POST   { background: rgba(99,102,241,0.15); color: #818cf8; border: 1px solid rgba(99,102,241,0.3); }
+  .PATCH  { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
+  .DELETE { background: rgba(239,68,68,0.15);  color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+
+  .endpoint-path {
+    font-family: 'Fira Code', monospace;
+    font-size: 13px;
+    color: #e2e8f0;
+    flex: 1;
+  }
+  .endpoint-name {
+    font-size: 11px;
+    color: var(--muted);
+    font-style: italic;
+  }
+  .endpoint-body {
+    padding: 12px 14px;
+  }
+  .role-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-bottom: 10px;
+  }
+  .role-tag {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .role-admin    { background: rgba(239,68,68,0.15);   color: #f87171;  border: 1px solid rgba(239,68,68,0.3); }
+  .role-manager  { background: rgba(245,158,11,0.15);  color: #fbbf24;  border: 1px solid rgba(245,158,11,0.3); }
+  .role-editor   { background: rgba(99,102,241,0.15);  color: #818cf8;  border: 1px solid rgba(99,102,241,0.3); }
+  .role-surveyor { background: rgba(16,185,129,0.15);  color: #34d399;  border: 1px solid rgba(16,185,129,0.3); }
+  .role-public   { background: rgba(148,163,184,0.15); color: #94a3b8;  border: 1px solid rgba(148,163,184,0.3); }
+
+  .label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600; margin-bottom: 5px; }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-family: 'Fira Code', monospace;
+    font-size: 11.5px;
+    color: #93c5fd;
+    overflow-x: auto;
+    margin-top: 4px;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+  .note {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 6px;
+    padding: 6px 10px;
+    background: rgba(99,102,241,0.08);
+    border-left: 3px solid var(--primary);
+    border-radius: 0 5px 5px 0;
+  }
+
+  /* ── TABLES ── */
+  .table-wrap { overflow-x: auto; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  th {
+    background: rgba(99,102,241,0.15);
+    color: #818cf8;
+    font-weight: 600;
+    padding: 8px 12px;
+    text-align: left;
+    border: 1px solid var(--border);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  td {
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'Fira Code', monospace;
+    font-size: 11.5px;
+  }
+  tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+
+  /* ── STATUS FLOW ── */
+  .status-flows {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .status-flow {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+  }
+  .status-flow h4 { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; }
+  .flow-chain { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; }
+  .status-pill {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 10px;
+  }
+  .s-draft    { background: rgba(148,163,184,0.15); color: #94a3b8; }
+  .s-assigned { background: rgba(245,158,11,0.15);  color: #fbbf24; }
+  .s-active   { background: rgba(99,102,241,0.15);  color: #818cf8; }
+  .s-success  { background: rgba(16,185,129,0.15);  color: #34d399; }
+  .s-danger   { background: rgba(239,68,68,0.15);   color: #f87171; }
+  .arr { color: var(--muted); }
+
+  /* ── PRINT ── */
+  @media print {
+    body { background: #fff; color: #000; }
+    .header { background: #6366f1 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    pre { background: #f1f5f9; color: #1e293b; border-color: #cbd5e1; }
+    .endpoint { border-color: #cbd5e1; }
+    .endpoint-header { background: #f8fafc; border-bottom-color: #e2e8f0; }
+    .section-header { border-bottom-color: #e2e8f0; }
+    .section-title { color: #0f172a; }
+    .endpoint-path { color: #0f172a; }
+    .endpoint-name { color: #64748b; }
+    .flow, .status-flow { border-color: #e2e8f0; background: #f8fafc; }
+    table, th, td { border-color: #cbd5e1; }
+    th { background: #e0e7ff; color: #4f46e5; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- HEADER -->
+<div class="header">
+  <h1>🧪 Pixpe Backend — API Test Guide</h1>
+  <p>Complete endpoint reference with request bodies &amp; role permissions</p>
+  <div class="base-url">Base URL: http://localhost:3000</div>
+</div>
+
+<!-- FLOW -->
+<div class="flow">
+  <h3>⚡ Recommended Testing Flow</h3>
+  <div class="flow-steps">
+    <span class="flow-step">1. Admin Signup</span><span class="flow-arrow">→</span>
+    <span class="flow-step">2. Login → Token</span><span class="flow-arrow">→</span>
+    <span class="flow-step">3. Create Users</span><span class="flow-arrow">→</span>
+    <span class="flow-step">4. Create AOI</span><span class="flow-arrow">→</span>
+    <span class="flow-step">5. Assign Surveyor</span><span class="flow-arrow">→</span>
+    <span class="flow-step">6. Upload Photo</span><span class="flow-arrow">→</span>
+    <span class="flow-step">7. Submit Form</span><span class="flow-arrow">→</span>
+    <span class="flow-step">8. Request Payout</span>
+  </div>
+</div>
+
+<!-- ══ AUTH ══ -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-icon">🔐</span>
+    <span class="section-title">AUTH MODULE</span>
+    <span class="section-subtitle">No token needed</span>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method POST">POST</span>
+      <span class="endpoint-path">/auth/admin/signup</span>
+      <span class="endpoint-name">Create Initial Admin (Dev only)</span>
+    </div>
+    <div class="endpoint-body">
+      <div class="role-tags"><span class="role-tag role-public">Public</span></div>
+      <div class="label">Request Body</div>
+      <pre>{ "email": "admin@pixpe.com", "password": "Admin@123", "name": "Super Admin", "role": "admin" }</pre>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method POST">POST</span>
+      <span class="endpoint-path">/auth/login</span>
+      <span class="endpoint-name">Email + Password Login</span>
+    </div>
+    <div class="endpoint-body">
+      <div class="role-tags"><span class="role-tag role-public">Public</span></div>
+      <div class="label">Request Body</div>
+      <pre>{ "email": "admin@pixpe.com", "password": "Admin@123" }</pre>
+      <div class="label" style="margin-top:10px">Response</div>
+      <pre>{ "access_token": "eyJhbGciOiJIUzI1NiJ9...", "user": { "id": "uuid", "role": "admin" } }</pre>
+      <div class="note">💡 Save <code>access_token</code> — add to header: <code>Authorization: Bearer &lt;TOKEN&gt;</code></div>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method POST">POST</span>
+      <span class="endpoint-path">/auth/otp/request</span>
+      <span class="endpoint-name">Request Email OTP</span>
+    </div>
+    <div class="endpoint-body">
+      <div class="role-tags"><span class="role-tag role-public">Public</span></div>
+      <div class="label">Request Body</div>
+      <pre>{ "email": "surveyor@pixpe.com" }</pre>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method POST">POST</span>
+      <span class="endpoint-path">/auth/otp/verify</span>
+      <span class="endpoint-name">Verify OTP &amp; Get Token</span>
+    </div>
+    <div class="endpoint-body">
+      <div class="role-tags"><span class="role-tag role-public">Public</span></div>
+      <div class="label">Request Body</div>
+      <pre>{ "email": "surveyor@pixpe.com", "otp": "123456" }</pre>
+    </div>
+  </div>
+</div>
+
+<!-- ══ USERS ══ -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-icon">👥</span>
+    <span class="section-title">USERS MODULE</span>
+    <span class="section-subtitle">Use Admin token</span>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method POST">POST</span>
+      <span class="endpoint-path">/users</span>
+      <span class="endpoint-name">Create User</span>
+    </div>
+    <div class="endpoint-body">
+      <div class="role-tags"><span class="role-tag role-admin">Admin</span><span class="role-tag role-manager">Manager</span></div>
+      <div class="label">Create Manager</div>
+      <pre>{ "email": "manager@pixpe.com", "password": "Manager@123", "name": "Area Manager", "role": "manager" }</pre>
+      <div class="label" style="margin-top:10px">Create Editor</div>
+      <pre>{ "email": "editor@pixpe.com", "password": "Editor@123", "name": "Data Editor", "role": "editor" }</pre>
+      <div class="label" style="margin-top:10px">Create Surveyor</div>
+      <pre>{ "email": "surveyor@pixpe.com", "password": "Surveyor@123", "name": "Field Surveyor", "role": "surveyor", "phone": "9876543210" }</pre>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method GET">GET</span>
+      <span class="endpoint-path">/users</span>
+      <span class="endpoint-name">List All Users</span>
+    </div>
+    <div class="endpoint-body">
+      <div class="role-tags"><span class="role-tag role-admin">Admin</span><span class="role-tag role-manager">Manager</span></div>
+      <div class="note">Optional query: <code>?role=surveyor</code></div>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method GET">GET</span>
+      <span class="endpoint-path">/users/:id</span>
+      <span class="endpoint-name">Get Single User</span>
+    </div>
+    <div class="endpoint-body">
+      <div class="role-tags"><span class="role-tag role-admin">Admin</span></div>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method PATCH">PATCH</span>
+      <span class="endpoint-path">/users/:id/role</span>
+      <span class="endpoint-name">Change Role</span>
+    </div>
+    <div class="endpoint-body">
+      <div class="role-tags"><span class="role-tag role-admin">Admin</span></div>
+      <pre>{ "role": "manager" }</pre>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method PATCH">PATCH</span>
+      <span class="endpoint-path">/users/:id/status</span>
+      <span class="endpoint-name">Activate / Deactivate</span>
+    </div>
+    <div class="endpoint-body">
+      <div class="role-tags"><span class="role-tag role-admin">Admin</span><span class="role-tag role-manager">Manager</span></div>
+      <pre>{ "isActive": false }</pre>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method PATCH">PATCH</span>
+      <span class="endpoint-path">/users/:id/kyc-status</span>
+      <span class="endpoint-name">Approve / Reject KYC</span>
+    </div>
+    <div class="endpoint-body">
+      <div class="role-tags"><span class="role-tag role-admin">Admin</span><span class="role-tag role-manager">Manager</span></div>
+      <div class="label">Approve</div>
+      <pre>{ "status": "APPROVED" }</pre>
+      <div class="label" style="margin-top:8px">Reject</div>
+      <pre>{ "status": "REJECTED", "reason": "Invalid document" }</pre>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method GET">GET</span>
+      <span class="endpoint-path">/users/kyc-pending</span>
+      <span class="endpoint-name">View Pending KYC</span>
+    </div>
+    <div class="endpoint-body">
+      <div class="role-tags"><span class="role-tag role-admin">Admin</span><span class="role-tag role-manager">Manager</span></div>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method PATCH">PATCH</span>
+      <span class="endpoint-path">/users/profile</span>
+      <span class="endpoint-name">Update Own Profile</span>
+    </div>
+    <div class="endpoint-body">
+      <div class="role-tags"><span class="role-tag role-surveyor">Surveyor</span><span class="role-tag role-editor">Editor</span><span class="role-tag role-manager">Manager</span></div>
+      <pre>{ "name": "Updated Name" }</pre>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method DELETE">DELETE</span>
+      <span class="endpoint-path">/users/:id</span>
+      <span class="endpoint-name">Delete User</span>
+    </div>
+    <div class="endpoint-body">
+      <div class="role-tags"><span class="role-tag role-admin">Admin</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ AOI ══ -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-icon">🗺️</span>
+    <span class="section-title">AOI MODULE</span>
+    <span class="section-subtitle">Area of Interest</span>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method POST">POST</span>
+      <span class="endpoint-path">/aoi</span>
+      <span class="endpoint-name">Create AOI</span>
+    </div>
+    <div class="endpoint-body">
+      <div class="role-tags"><span class="role-tag role-admin">Admin</span><span class="role-tag role-manager">Manager</span></div>
+      <pre>{
+  "aoi_name": "Connaught Place Block A",
+  "center_latitude": 28.6328,
+  "center_longitude": 77.2197,
+  "boundary_geojson": {
+    "type": "Polygon",
+    "coordinates": [[[77.21, 28.63],[77.23, 28.63],[77.23, 28.64],[77.21, 28.64],[77.21, 28.63]]]
+  },
+  "city": "New Delhi",
+  "state": "Delhi",
+  "pin_code": "110001",
+  "priority": "HIGH"
+}</pre>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method GET">GET</span>
+      <span class="endpoint-path">/aoi</span>
+      <span class="endpoint-name">List All AOIs</span>
+    </div>
+    <div class="endpoint-body">
+      <div class="role-tags"><span class="role-tag role-admin">Admin</span><span class="role-tag role-manager">Manager</span></div>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method PATCH">PATCH</span>
+      <span class="endpoint-path">/aoi/:id/assign</span>
+      <span class="endpoint-name">Assign Surveyor to AOI</span>
+    </div>
+    <div class="endpoint-body">
+      <div class="role-tags"><span class="role-tag role-admin">Admin</span><span class="role-tag role-manager">Manager</span></div>
+      <pre>{ "surveyor_id": "&lt;SURVEYOR_USER_ID&gt;" }</pre>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method GET">GET</span>
+      <span class="endpoint-path">/aoi/assigned</span>
+      <span class="endpoint-name">View My Assigned AOIs</span>
+    </div>
+    <div class="endpoint-body">
+      <div class="role-tags"><span class="role-tag role-surveyor">Surveyor</span><span class="role-tag role-editor">Editor</span></div>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method PATCH">PATCH</span>
+      <span class="endpoint-path">/aoi/:id/start</span>
+      <span class="endpoint-name">Start AOI (IN_PROGRESS)</span>
+    </div>
+    <div class="endpoint-body">
+      <div class="role-tags"><span class="role-tag role-surveyor">Surveyor</span></div>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method PATCH">PATCH</span>
+      <span class="endpoint-path">/aoi/:id/submit</span>
+      <span class="endpoint-name">Submit AOI (SUBMITTED)</span>
+    </div>
+    <div class="endpoint-body">
+      <div class="role-tags"><span class="role-tag role-surveyor">Surveyor</span></div>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method PATCH">PATCH</span>
+      <span class="endpoint-path">/aoi/:id/close</span>
+      <span class="endpoint-name">Close AOI</span>
+    </div>
+    <div class="endpoint-body">
+      <div class="role-tags"><span class="role-tag role-admin">Admin</span><span class="role-tag role-manager">Manager</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ POI ══ -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-icon">📍</span>
+    <span class="section-title">POI MODULE</span>
+    <span class="section-subtitle">Point of Interest</span>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method POST">POST</span>
+      <span class="endpoint-path">/poi</span>
+      <span class="endpoint-name">Create POI</span>
+    </div>
+    <div class="endpoint-body">
+      <div class="role-tags"><span class="role-tag role-surveyor">Surveyor</span></div>
+      <pre>{
+  "poi_name": "Sharma General Store",
+  "address": "Shop 12, Block A, Connaught Place, New Delhi",
+  "latitude": 28.6330,
+  "longitude": 77.2195,
+  "category": "General Store",
+  "aoi_id": "&lt;AOI_ID&gt;"
+}</pre>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method PATCH">PATCH</span>
+      <span class="endpoint-path">/poi/:id</span>
+      <span class="endpoint-name">Update POI</span>
+    </div>
+    <div class="endpoint-body">
+      <div class="role-tags"><span class="role-tag role-surveyor">Surveyor</span></div>
+      <pre>{ "notes": "Closed on Sundays", "category": "Grocery" }</pre>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method GET">GET</span>
+      <span class="endpoint-path">/poi</span>
+      <span class="endpoint-name">List All POIs</span>
+    </div>
+    <div class="endpoint-body">
+      <div class="role-tags"><span class="role-tag role-admin">Admin</span><span class="role-tag role-manager">Manager</span></div>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method GET">GET</span>
+      <span class="endpoint-path">/poi/assigned</span>
+      <span class="endpoint-name">View Assigned POIs</span>
+    </div>
+    <div class="endpoint-body">
+      <div class="role-tags"><span class="role-tag role-editor">Editor</span></div>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method PATCH">PATCH</span>
+      <span class="endpoint-path">/poi/:id/verify</span>
+      <span class="endpoint-name">Verify / Reject POI</span>
+    </div>
+    <div class="endpoint-body">
+      <div class="role-tags"><span class="role-tag role-admin">Admin</span><span class="role-tag role-manager">Manager</span></div>
+      <div class="label">Verify</div>
+      <pre>{ "status": "VERIFIED" }</pre>
+      <div class="label" style="margin-top:8px">Reject</div>
+      <pre>{ "status": "REJECTED", "rejection_reason": "Incorrect coordinates" }</pre>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PHOTOS ══ -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-icon">📸</span>
+    <span class="section-title">PHOTOS MODULE</span>
+    <span class="section-subtitle">Use Surveyor token to upload</span>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method POST">POST</span>
+      <span class="endpoint-path">/photos/upload</span>
+      <span class="endpoint-name">Upload Photo</span>
+    </div>
+    <div class="endpoint-body">
+      <div class="role-tags"><span class="role-tag role-surveyor">Surveyor</span></div>
+      <pre>{
+  "storage_path": "uploads/poi/shop_front_001.jpg",
+  "file_name": "shop_front_001.jpg",
+  "mime_type": "image/jpeg",
+  "size_bytes": 204800,
+  "poi_id": "&lt;POI_ID&gt;",
+  "aoi_id": "&lt;AOI_ID&gt;",
+  "photo_category": "STOREFRONT",
+  "latitude": 28.6330,
+  "longitude": 77.2195
+}</pre>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method GET">GET</span>
+      <span class="endpoint-path">/photos/my-uploads</span>
+      <span class="endpoint-name">View My Uploads</span>
+    </div>
+    <div class="endpoint-body">
+      <div class="role-tags"><span class="role-tag role-surveyor">Surveyor</span></div>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method GET">GET</span>
+      <span class="endpoint-path">/photos</span>
+      <span class="endpoint-name">View All Photos</span>
+    </div>
+    <div class="endpoint-body">
+      <div class="role-tags"><span class="role-tag role-admin">Admin</span><span class="role-tag role-manager">Manager</span></div>
+      <div class="note">Optional query: <code>?status=PENDING</code></div>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method PATCH">PATCH</span>
+      <span class="endpoint-path">/photos/:id/assign</span>
+      <span class="endpoint-name">Assign Photo to Editor</span>
+    </div>
+    <div class="endpoint-body">
+      <div class="role-tags"><span class="role-tag role-admin">Admin</span><span class="role-tag role-manager">Manager</span></div>
+      <pre>{ "editor_id": "&lt;EDITOR_USER_ID&gt;" }</pre>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method GET">GET</span>
+      <span class="endpoint-path">/photos/assigned</span>
+      <span class="endpoint-name">View Assigned Photos</span>
+    </div>
+    <div class="endpoint-body">
+      <div class="role-tags"><span class="role-tag role-editor">Editor</span></div>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method PATCH">PATCH</span>
+      <span class="endpoint-path">/photos/:id/status</span>
+      <span class="endpoint-name">Approve / Reject Photo</span>
+    </div>
+    <div class="endpoint-body">
+      <div class="role-tags"><span class="role-tag role-admin">Admin</span><span class="role-tag role-manager">Manager</span></div>
+      <div class="label">Approve</div>
+      <pre>{ "status": "APPROVED" }</pre>
+      <div class="label" style="margin-top:8px">Reject</div>
+      <pre>{ "status": "REJECTED", "rejection_reason": "Blurry image, retake needed" }</pre>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method PATCH">PATCH</span>
+      <span class="endpoint-path">/photos/:id/resubmit</span>
+      <span class="endpoint-name">Resubmit Rejected Photo</span>
+    </div>
+    <div class="endpoint-body">
+      <div class="role-tags"><span class="role-tag role-surveyor">Surveyor</span></div>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method PATCH">PATCH</span>
+      <span class="endpoint-path">/photos/:id/request-reupload</span>
+      <span class="endpoint-name">Editor Request Re-upload</span>
+    </div>
+    <div class="endpoint-body">
+      <div class="role-tags"><span class="role-tag role-editor">Editor</span></div>
+      <pre>{ "reason": "Photo does not match POI location" }</pre>
+    </div>
+  </div>
+</div>
+
+<!-- ══ FORMS ══ -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-icon">📋</span>
+    <span class="section-title">FORMS MODULE</span>
+    <span class="section-subtitle">Use Editor token</span>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method POST">POST</span>
+      <span class="endpoint-path">/forms</span>
+      <span class="endpoint-name">Submit Form Data</span>
+    </div>
+    <div class="endpoint-body">
+      <div class="role-tags"><span class="role-tag role-editor">Editor</span></div>
+      <pre>{
+  "poi_id": "&lt;POI_ID&gt;",
+  "form_type": "BUSINESS_DETAILS",
+  "form_data": {
+    "business_name": "Sharma General Store",
+    "owner_name": "Ramesh Sharma",
+    "categories": ["Grocery", "General Store"],
+    "timings": "9 AM - 9 PM",
+    "days_open": ["Mon","Tue","Wed","Thu","Fri","Sat"],
+    "phone": "9876543210",
+    "gst_number": "07AAAAA0000A1Z5"
+  },
+  "linked_photo_id": "&lt;PHOTO_ID&gt;"
+}</pre>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method GET">GET</span>
+      <span class="endpoint-path">/forms</span>
+      <span class="endpoint-name">View All Forms</span>
+    </div>
+    <div class="endpoint-body">
+      <div class="role-tags"><span class="role-tag role-admin">Admin</span><span class="role-tag role-manager">Manager</span></div>
+      <div class="note">Optional query: <code>?status=PENDING</code></div>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method PATCH">PATCH</span>
+      <span class="endpoint-path">/forms/:id/status</span>
+      <span class="endpoint-name">Approve / Reject Form</span>
+    </div>
+    <div class="endpoint-body">
+      <div class="role-tags"><span class="role-tag role-admin">Admin</span><span class="role-tag role-manager">Manager</span></div>
+      <div class="label">Approve</div>
+      <pre>{ "status": "APPROVED" }</pre>
+      <div class="label" style="margin-top:8px">Reject</div>
+      <pre>{ "status": "REJECTED", "rejection_reason": "Missing GST number" }</pre>
+    </div>
+  </div>
+</div>
+
+<!-- ══ REWARDS ══ -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-icon">💰</span>
+    <span class="section-title">REWARDS MODULE</span>
+    <span class="section-subtitle">Rate: ₹10/photo · ₹50/POI</span>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method POST">POST</span>
+      <span class="endpoint-path">/rewards/request</span>
+      <span class="endpoint-name">Request Payout</span>
+    </div>
+    <div class="endpoint-body">
+      <div class="role-tags"><span class="role-tag role-surveyor">Surveyor</span></div>
+      <pre>{
+  "aoi_id": "&lt;AOI_ID&gt;",
+  "total_photos_submitted": 25,
+  "total_photos_approved": 20,
+  "total_pois_created": 8,
+  "request_notes": "Completed Block A survey"
+}</pre>
+      <div class="note">💡 Auto-calculated: 20×₹10 + 8×₹50 = <strong>₹600</strong></div>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method GET">GET</span>
+      <span class="endpoint-path">/rewards/my-earnings</span>
+      <span class="endpoint-name">View My Earnings</span>
+    </div>
+    <div class="endpoint-body">
+      <div class="role-tags"><span class="role-tag role-surveyor">Surveyor</span></div>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method GET">GET</span>
+      <span class="endpoint-path">/rewards</span>
+      <span class="endpoint-name">All Reward Requests</span>
+    </div>
+    <div class="endpoint-body">
+      <div class="role-tags"><span class="role-tag role-admin">Admin</span><span class="role-tag role-manager">Manager</span></div>
+      <div class="note">Optional query: <code>?status=PENDING</code></div>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method PATCH">PATCH</span>
+      <span class="endpoint-path">/rewards/:id/status</span>
+      <span class="endpoint-name">Approve / Reject / Pay</span>
+    </div>
+    <div class="endpoint-body">
+      <div class="role-tags"><span class="role-tag role-admin">Admin</span><span class="role-tag role-manager">Manager</span></div>
+      <div class="label">Approve + Bonus</div>
+      <pre>{ "status": "APPROVED", "review_notes": "Good quality work", "bonus_amount": 100 }</pre>
+      <div class="label" style="margin-top:8px">Reject</div>
+      <pre>{ "status": "REJECTED", "review_notes": "Insufficient POI count" }</pre>
+      <div class="label" style="margin-top:8px">Mark as Paid</div>
+      <pre>{ "status": "PAID", "payment_method": "UPI", "payment_reference": "TXN2024021900001" }</pre>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method GET">GET</span>
+      <span class="endpoint-path">/rewards/stats</span>
+      <span class="endpoint-name">Dashboard Stats</span>
+    </div>
+    <div class="endpoint-body">
+      <div class="role-tags"><span class="role-tag role-admin">Admin</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SYSTEM ══ -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-icon">⚙️</span>
+    <span class="section-title">SYSTEM MODULE</span>
+    <span class="section-subtitle">Admin only</span>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method GET">GET</span>
+      <span class="endpoint-path">/system/logs</span>
+      <span class="endpoint-name">Activity Logs</span>
+    </div>
+    <div class="endpoint-body">
+      <div class="role-tags"><span class="role-tag role-admin">Admin</span></div>
+      <div class="note">Optional query: <code>?limit=20</code></div>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method GET">GET</span>
+      <span class="endpoint-path">/system/settings</span>
+      <span class="endpoint-name">View Settings</span>
+    </div>
+    <div class="endpoint-body">
+      <div class="role-tags"><span class="role-tag role-admin">Admin</span></div>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method PATCH">PATCH</span>
+      <span class="endpoint-path">/system/settings</span>
+      <span class="endpoint-name">Update Setting</span>
+    </div>
+    <div class="endpoint-body">
+      <div class="role-tags"><span class="role-tag role-admin">Admin</span></div>
+      <pre>{ "key": "REWARD_PER_PHOTO", "value": "15", "description": "Reward per approved photo (₹)" }</pre>
+    </div>
+  </div>
+</div>
+
+<!-- ══ REFERENCE TABLES ══ -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-icon">📊</span>
+    <span class="section-title">REFERENCE TABLES</span>
+  </div>
+
+  <div style="margin-bottom:16px">
+    <h4 style="color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">🔑 Token Reference</h4>
+    <div class="table-wrap">
+      <table>
+        <tr><th>Role</th><th>Email</th><th>Password</th><th>Use For</th></tr>
+        <tr><td><span class="role-tag role-admin">admin</span></td><td>admin@pixpe.com</td><td>Admin@123</td><td>All admin routes</td></tr>
+        <tr><td><span class="role-tag role-manager">manager</span></td><td>manager@pixpe.com</td><td>Manager@123</td><td>Assign, approve, reject</td></tr>
+        <tr><td><span class="role-tag role-editor">editor</span></td><td>editor@pixpe.com</td><td>Editor@123</td><td>Review photos, submit forms</td></tr>
+        <tr><td><span class="role-tag role-surveyor">surveyor</span></td><td>surveyor@pixpe.com</td><td>Surveyor@123</td><td>Upload, create POI, payout</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <h4 style="color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">🔄 Status Flows</h4>
+  <div class="status-flows">
+    <div class="status-flow">
+      <h4>AOI Status</h4>
+      <div class="flow-chain">
+        <span class="status-pill s-draft">DRAFT</span><span class="arr">→</span>
+        <span class="status-pill s-assigned">ASSIGNED</span><span class="arr">→</span>
+        <span class="status-pill s-active">IN_PROGRESS</span><span class="arr">→</span>
+        <span class="status-pill s-assigned">SUBMITTED</span><span class="arr">→</span>
+        <span class="status-pill s-success">CLOSED</span>
+      </div>
+    </div>
+    <div class="status-flow">
+      <h4>Photo Status</h4>
+      <div class="flow-chain">
+        <span class="status-pill s-draft">PENDING</span><span class="arr">→</span>
+        <span class="status-pill s-assigned">ASSIGNED</span><span class="arr">→</span>
+        <span class="status-pill s-success">APPROVED</span>/<span class="status-pill s-danger">REJECTED</span><span class="arr">→</span>
+        <span class="status-pill s-active">RESUBMITTED</span>
+      </div>
+    </div>
+    <div class="status-flow">
+      <h4>Reward Status</h4>
+      <div class="flow-chain">
+        <span class="status-pill s-draft">PENDING</span><span class="arr">→</span>
+        <span class="status-pill s-success">APPROVED</span><span class="arr">→</span>
+        <span class="status-pill s-active">PAID</span>
+        &nbsp;|&nbsp;
+        <span class="status-pill s-danger">REJECTED</span>
+      </div>
+    </div>
+    <div class="status-flow">
+      <h4>KYC Status</h4>
+      <div class="flow-chain">
+        <span class="status-pill s-draft">PENDING</span><span class="arr">→</span>
+        <span class="status-pill s-assigned">SUBMITTED</span><span class="arr">→</span>
+        <span class="status-pill s-success">APPROVED</span>/<span class="status-pill s-danger">REJECTED</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="text-align:center;color:var(--muted);font-size:11px;margin-top:24px;padding-top:16px;border-top:1px solid var(--border)">
+  Pixpe Backend API Test Guide — Generated 2026 · Total Endpoints: 53
+</div>
+
+</div>
+</body>
+</html>
