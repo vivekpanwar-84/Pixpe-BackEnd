@@ -520,7 +520,8 @@
           <div class="label" style="margin-top:10px">Response</div>
           <pre>{ "access_token": "eyJhbGciOiJIUzI1NiJ9...", "user": { "id": "uuid", "role": "admin" } }</pre>
           <div class="note">💡 Save <code>access_token</code> — add to header:
-            <code>Authorization: Bearer &lt;TOKEN&gt;</code></div>
+            <code>Authorization: Bearer &lt;TOKEN&gt;</code>
+          </div>
         </div>
       </div>
 
@@ -800,14 +801,22 @@
         </div>
         <div class="endpoint-body">
           <div class="role-tags"><span class="role-tag role-surveyor">Surveyor</span></div>
-          <pre>{
+          <!-- <pre>{
   "poi_name": "Sharma General Store",
   "address": "Shop 12, Block A, Connaught Place, New Delhi",
   "latitude": 28.6330,
   "longitude": 77.2195,
   "category": "General Store",
   "aoi_id": "&lt;AOI_ID&gt;"
-}</pre>
+}</pre> -->
+          <pre>
+  {
+    "aoi_id": "...",
+    "business_name": "Sharma Medical Store",
+    "latitude": 28.633,
+    "longitude": 77.2195
+  }
+</pre>
         </div>
       </div>
 

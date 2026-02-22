@@ -60,7 +60,7 @@ export class AuthService {
         await this.usersService.update(user.id, {
             otp: null,
             otp_expiry: null,
-            is_phone_verified: true, // Assuming email implies verified for now
+            is_email_verified: true, // Assuming email implies verified for now
             last_login_at: new Date()
         });
 

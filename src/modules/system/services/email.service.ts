@@ -9,12 +9,12 @@ export class EmailService {
 
     constructor(private configService: ConfigService) {
         this.transporter = nodemailer.createTransport({
-            host: this.configService.get<string>('SMTP_HOST'),
-            port: this.configService.get<number>('SMTP_PORT'),
-            secure: this.configService.get<string>('SMTP_SECURE') === 'true', // correctly parse string "false"
+            host: this.configService.get<string>('BREVO_SMTP_HOST', 'smtp-relay.brevo.com'),
+            port: this.configService.get<number>('BREVO_SMTP_PORT', 587),
+            secure: false, // Brevo SMTP port 587 uses STARTTLS (not direct SSL)
             auth: {
-                user: this.configService.get<string>('SMTP_USER'),
-                pass: this.configService.get<string>('SMTP_PASS'),
+                user: this.configService.get<string>('BREVO_SMTP_USER'),
+                pass: this.configService.get<string>('BREVO_SMTP_PASS'),
             },
         });
     }
@@ -22,7 +22,7 @@ export class EmailService {
     async sendMail(to: string, subject: string, text: string, html?: string) {
         try {
             const info = await this.transporter.sendMail({
-                from: this.configService.get<string>('SMTP_FROM', '"Pixpe System" <noreply@pixpe.com>'),
+                from: this.configService.get<string>('BREVO_SMTP_FROM', '"Pixpe System" <noreply@pixpe.com>'),
                 to,
                 subject,
                 text,

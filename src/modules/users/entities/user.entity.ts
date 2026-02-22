@@ -67,6 +67,9 @@ export class User extends BaseEntity {
     @Column({ type: 'text', nullable: true })
     kyc_rejected_reason: string;
 
+    @Column({ type: 'varchar', length: 500, nullable: true })
+    kyc_document_url: string;
+
     // --- Account Status ---
     @Column({ type: 'boolean', default: true })
     is_active: boolean;

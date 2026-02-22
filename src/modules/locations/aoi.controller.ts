@@ -34,6 +34,12 @@ export class AoiController {
         return this.locationsService.findAllAoi(req.user.role, req.user.userId);
     }
 
+    @Get('assigned/:id')
+    @Roles(RoleSlug.SURVEYOR, RoleSlug.EDITOR)
+    findOneAssigned(@Param('id') id: string, @Req() req: any) {
+        return this.locationsService.findOneAssignedAoi(id, req.user.userId);
+    }
+
     // --- Verified: Assign AOI ---
     @Patch(':id/assign')
     @Roles(RoleSlug.ADMIN, RoleSlug.MANAGER)

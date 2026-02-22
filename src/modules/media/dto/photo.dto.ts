@@ -1,42 +1,24 @@
-import { IsString, IsNotEmpty, IsOptional, IsUUID, IsObject, IsNumber } from 'class-validator';
-
-export class CreatePhotoDto {
-    @IsString()
+import { IsString, IsNotEmpty, IsOptional, IsUUID, IsNumber } from 'class-validator';
+import { Type } from 'class-transformer';
+export class UploadPhotoDto {
+    @IsUUID()
     @IsNotEmpty()
-    storage_path: string;
-
-    @IsString()
-    @IsNotEmpty()
-    file_name: string;
-
-    @IsString()
-    @IsNotEmpty()
-    mime_type: string;
-
-    @IsNumber()
-    @IsNotEmpty()
-    size_bytes: number;
+    poi_id: string;
 
     @IsUUID()
-    @IsOptional()
-    poi_id?: string;
-
-    @IsUUID()
-    @IsOptional()
-    aoi_id?: string;
+    @IsNotEmpty()
+    aoi_id: string;
 
     @IsString()
-    @IsOptional()
-    photo_category?: string;
+    @IsNotEmpty()
+    photo_type: string; // STOREFRONT, SIGNBOARD, INTERIOR, PRODUCT, CONTACT_DETAILS
 
-    @IsObject()
-    @IsOptional()
-    ai_metadata?: object;
-
+    @Type(() => Number)
     @IsNumber()
     @IsOptional()
     latitude?: number;
 
+    @Type(() => Number)
     @IsNumber()
     @IsOptional()
     longitude?: number;

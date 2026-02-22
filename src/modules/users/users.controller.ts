@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, Req, UnauthorizedException } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, Req, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from '../auth/dto/create-user.dto';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -7,6 +7,10 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { UpdateKycStatusDto, ChangeRoleDto, UpdateStatusDto, UpdateProfileDto } from './dto/user-operations.dto';
 import { KycStatus } from './entities/user.entity';
+
+import { FileInterceptor } from '@nestjs/platform-express';
+import { UseInterceptors, UploadedFile } from '@nestjs/common';
+import { memoryStorage } from 'multer';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -34,7 +38,13 @@ export class UsersController {
         return this.usersService.findPendingKyc();
     }
 
-    // --- 4. User: View Own KYC Status ---
+    // --- 4. User: View Own Profile ---
+    @Get('profile')
+    async getProfile(@Req() req: any) {
+        return this.usersService.findOne(req.user.userId);
+    }
+
+    // --- 5. User: View Own KYC Status ---
     @Get('kyc/status')
     async getMyKycStatus(@Req() req: any) {
         const user = await this.usersService.findOne(req.user.userId);
@@ -77,10 +87,12 @@ export class UsersController {
 
     // --- 10. Start KYC (Submit) ---
     @Post('kyc')
-    async submitKyc(@Req() req: any) {
-        // Placeholder for KYC submission logic
-        // In real implementation, this would handle file uploads or form data
-        return this.usersService.updateKycStatus(req.user.userId, KycStatus.SUBMITTED);
+    @UseInterceptors(FileInterceptor('file', { storage: memoryStorage() }))
+    async submitKyc(@Req() req: any, @UploadedFile() file: Express.Multer.File) {
+        if (!file) {
+            throw new BadRequestException('KYC document file is required. Send as form-data with key "file".');
+        }
+        return this.usersService.submitKycDocument(req.user.userId, file);
     }
 
     // --- 11. Admin/Manager: Approve/Reject KYC ---

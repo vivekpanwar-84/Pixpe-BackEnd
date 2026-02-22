@@ -48,7 +48,7 @@ export class PoiPoint extends BaseEntity {
     @Column({ type: 'decimal', precision: 11, scale: 8 })
     longitude: number;
 
-    @Column({ type: 'text' })
+    @Column({ type: 'text', nullable: true })
     address_line1: string;
 
     @Column({ type: 'text', nullable: true })
@@ -57,13 +57,13 @@ export class PoiPoint extends BaseEntity {
     @Column({ type: 'varchar', length: 200, nullable: true })
     landmark: string;
 
-    @Column({ type: 'varchar', length: 100 })
+    @Column({ type: 'varchar', length: 100, nullable: true })
     city: string;
 
-    @Column({ type: 'varchar', length: 100 })
+    @Column({ type: 'varchar', length: 100, nullable: true })
     state: string;
 
-    @Column({ type: 'varchar', length: 10 })
+    @Column({ type: 'varchar', length: 10, nullable: true })
     pin_code: string;
 
     // --- Details ---
@@ -121,4 +121,22 @@ export class PoiPoint extends BaseEntity {
     @ManyToOne(() => User)
     @JoinColumn({ name: 'created_by_id' })
     created_by: User;
+
+    // --- Assignment ---
+    @Column({ type: 'uuid', nullable: true })
+    assigned_to_id: string;
+
+    @ManyToOne(() => User)
+    @JoinColumn({ name: 'assigned_to_id' })
+    assigned_to: User;
+
+    @Column({ type: 'timestamptz', nullable: true })
+    assigned_at: Date;
+
+    @Column({ type: 'uuid', nullable: true })
+    assigned_by_id: string;
+
+    @ManyToOne(() => User)
+    @JoinColumn({ name: 'assigned_by_id' })
+    assigned_by: User;
 }

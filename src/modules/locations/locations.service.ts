@@ -5,6 +5,7 @@ import { AoiArea } from './entities/aoi-area.entity';
 import { PoiPoint } from './entities/poi-point.entity';
 import { CreateAoiDto, UpdateAoiDto } from './dto/aoi.dto';
 import { CreatePoiDto, UpdatePoiDto, VerifyPoiDto } from './dto/poi.dto';
+import { RoleSlug } from '../../common/constants/roles.enum';
 
 @Injectable()
 export class LocationsService {
@@ -54,6 +55,15 @@ export class LocationsService {
         return aoi;
     }
 
+    async findOneAssignedAoi(id: string, userId: string): Promise<AoiArea> {
+        const aoi = await this.aoiRepository.findOne({
+            where: { id, assigned_to_id: userId },
+            relations: ['assigned_to', 'created_by']
+        });
+        if (!aoi) throw new NotFoundException(`Assigned AOI #${id} not found or not assigned to you`);
+        return aoi;
+    }
+
     async updateAoi(id: string, updateAoiDto: UpdateAoiDto): Promise<AoiArea> {
         const aoi = await this.findOneAoi(id);
         Object.assign(aoi, updateAoiDto);
@@ -92,21 +102,49 @@ export class LocationsService {
         return this.poiRepository.save(poi);
     }
 
-    async findAllPoi(assignedToAoi?: boolean, userId?: string): Promise<PoiPoint[]> {
-        // If userId provided (Editor), maybe filter by assigned regions?
-        // Implementation might need complex join with AOI assignment
-        // For now return all for Admin/Manager
-        return this.poiRepository.find({ relations: ['created_by'] });
+    async findAllPoi(role?: string, userId?: string, aoiId?: string, assignedToAoi?: boolean): Promise<PoiPoint[]> {
+        const query = this.poiRepository.createQueryBuilder('poi')
+            .leftJoinAndSelect('poi.created_by', 'created_by')
+            .leftJoinAndSelect('poi.assigned_to', 'assigned_to')
+            .leftJoinAndSelect('poi.aoi', 'aoi');
+
+        if (role === 'surveyor') {
+            query.andWhere('poi.created_by_id = :userId', { userId });
+        } else if (role === 'editor') {
+            query.andWhere('poi.assigned_to_id = :userId', { userId });
+        }
+
+        if (aoiId) {
+            query.andWhere('poi.aoi_id = :aoiId', { aoiId });
+        }
+
+        return query.getMany();
+    }
+
+    async findOnePoi(id: string): Promise<PoiPoint> {
+        const poi = await this.poiRepository.findOne({
+            where: { id },
+            relations: ['created_by', 'assigned_to', 'aoi']
+        });
+        if (!poi) throw new NotFoundException(`POI #${id} not found`);
+        return poi;
     }
 
     async updatePoi(id: string, updatePoiDto: UpdatePoiDto, userId: string): Promise<PoiPoint> {
-        const poi = await this.poiRepository.findOne({ where: { id } });
-        if (!poi) throw new NotFoundException('POI not found');
-
+        const poi = await this.findOnePoi(id);
         // Ensure only creator can update logic if needed
         // if (poi.created_by_id !== userId) throw new UnauthorizedException();
 
         Object.assign(poi, updatePoiDto);
+        return this.poiRepository.save(poi);
+    }
+
+    async assignPoi(id: string, editorId: string, assignedBy: string): Promise<PoiPoint> {
+        const poi = await this.findOnePoi(id);
+        poi.assigned_to_id = editorId;
+        poi.assigned_by_id = assignedBy;
+        poi.assigned_at = new Date();
+        // optionally update status if needed, e.g. poi.status = 'ASSIGNED';
         return this.poiRepository.save(poi);
     }
 

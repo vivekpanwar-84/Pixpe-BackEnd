@@ -7,6 +7,8 @@ import { CreateUserDto } from '../auth/dto/create-user.dto';
 import { Role } from '../roles/entities/role.entity';
 import { RoleSlug } from '../../common/constants/roles.enum';
 
+import { SupabaseService } from '../media/supabase.service';
+
 @Injectable()
 export class UsersService {
     constructor(
@@ -14,7 +16,14 @@ export class UsersService {
         private usersRepository: Repository<User>,
         @InjectRepository(Role) // Need to inject Role repository
         private rolesRepository: Repository<Role>, // Add to constructor
+        private supabaseService: SupabaseService,
     ) { }
+
+    async submitKycDocument(userId: string, file: Express.Multer.File): Promise<User> {
+        const fileName = `KYC_${userId}_${Date.now()}_${file.originalname}`;
+        const url = await this.supabaseService.uploadFile(file.buffer, file.mimetype, fileName);
+        return this.updateKycStatus(userId, KycStatus.SUBMITTED, undefined, undefined, url);
+    }
 
     // --- 1. Create User (Admin Action) ---
     async createUser(createUserDto: CreateUserDto): Promise<User> {
@@ -60,7 +69,7 @@ export class UsersService {
 
     async findPendingKyc(): Promise<User[]> {
         return this.usersRepository.find({
-            where: { kyc_status: KycStatus.PENDING, is_deleted: false },
+            where: { kyc_status: KycStatus.SUBMITTED, is_deleted: false },
             relations: ['role'],
         });
     }
@@ -115,9 +124,14 @@ export class UsersService {
         return this.usersRepository.save(user);
     }
 
-    async updateKycStatus(id: string, status: KycStatus, reason?: string, approvedBy?: string): Promise<User> {
+    async updateKycStatus(id: string, status: KycStatus, reason?: string, approvedBy?: string, kycDocumentUrl?: string): Promise<User> {
         const user = await this.findOne(id);
         user.kyc_status = status;
+
+        if (kycDocumentUrl) {
+            user.kyc_document_url = kycDocumentUrl;
+            user.kyc_submitted_at = new Date();
+        }
 
         if (status === KycStatus.APPROVED) {
             user.kyc_approved_at = new Date();
@@ -129,6 +143,7 @@ export class UsersService {
             user.is_kyc_verified = false;
             user.kyc_approved_at = null as any; // TypeORM nullable handling
             user.kyc_approved_by = null as any;
+            user.kyc_document_url = ''; // Clear document on rejection
         }
 
         return this.usersRepository.save(user);

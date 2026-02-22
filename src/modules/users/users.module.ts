@@ -7,10 +7,13 @@ import { Role } from '../roles/entities/role.entity';
 import { UsersController } from './users.controller';
 import { AuthModule } from '../auth/auth.module';
 
+import { MediaModule } from '../media/media.module';
+
 @Module({
     imports: [
         TypeOrmModule.forFeature([User, KycDocument, Role]),
         forwardRef(() => AuthModule),
+        MediaModule,
     ],
     controllers: [UsersController],
     providers: [UsersService],

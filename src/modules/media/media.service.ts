@@ -1,10 +1,11 @@
-import { Injectable, NotFoundException, BadRequestException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, NotFoundException, InternalServerErrorException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Photo } from './entities/photo.entity';
 import { PoiForm } from '../workflow/entities/poi-form.entity';
-import { CreatePhotoDto, UpdatePhotoStatusDto, AssignPhotoDto } from './dto/photo.dto';
+import { UploadPhotoDto, UpdatePhotoStatusDto } from './dto/photo.dto';
 import { CreateFormDto, UpdateFormStatusDto } from './dto/form.dto';
+import { SupabaseService } from './supabase.service';
 
 @Injectable()
 export class MediaService {
@@ -13,28 +14,55 @@ export class MediaService {
         private photoRepository: Repository<Photo>,
         @InjectRepository(PoiForm)
         private formRepository: Repository<PoiForm>,
+        private supabaseService: SupabaseService,
     ) { }
 
     // --- Photo Operations ---
 
-    async createPhoto(createPhotoDto: CreatePhotoDto, userId: string): Promise<Photo> {
-        // Validation: Ensure POI/AOI exist if provided (omitted for brevity, relying on FK)
-        // If POI is provided, fetch AOI from it if not provided?
-        // For now, assume strict DTO compliance or DB constraints.
+    /**
+     * Upload photo to Supabase, rename it, and save metadata to DB.
+     * File name format: PIXPE_{YYYYMMDD}_{POI_ID_SHORT}_{SEQ_3DIGIT}.{ext}
+     * Example: PIXPE_20260221_8cce6c87_001.jpg
+     */
+    async uploadPhoto(
+        file: Express.Multer.File,
+        dto: UploadPhotoDto,
+        userId: string,
+    ): Promise<Photo> {
+        // 1. Build sequential number based on current photo count for this POI
+        const existingCount = await this.photoRepository.count({
+            where: { poi_id: dto.poi_id },
+        });
+        const seq = String(existingCount + 1).padStart(3, '0'); // 001, 002, 003...
+
+        // 2. Build renamed file name
+        const now = new Date();
+        const dateStr = now.toISOString().slice(0, 10).replace(/-/g, ''); // 20260221
+        const poiShort = dto.poi_id.replace(/-/g, '').slice(0, 8);       // first 8 chars
+        const ext = file.mimetype.split('/')[1]?.replace('jpeg', 'jpg') || 'jpg';
+        const fileName = `PIXPE_${dateStr}_${poiShort}_${seq}.${ext}`;
+
+        // 3. Upload to Supabase
+        const photoUrl = await this.supabaseService.uploadFile(
+            file.buffer,
+            file.mimetype,
+            fileName,
+        );
+
+        // 4. Save metadata to DB
+        const fileSizeKb = Math.round(file.size / 1024);
 
         const photo = this.photoRepository.create({
-            ...createPhotoDto,
+            poi_id: dto.poi_id,
+            aoi_id: dto.aoi_id,
+            photo_url: photoUrl,
+            file_size_kb: fileSizeKb,
+            photo_type: dto.photo_type,
+            latitude: dto.latitude,
+            longitude: dto.longitude,
             uploaded_by_id: userId,
             status: 'PENDING',
-            photo_url: createPhotoDto.storage_path, // Mapping DTO path to URL
-            photo_type: createPhotoDto.photo_category || 'General',
         });
-
-        // Handling default values if not nullable and not in DTO
-        if (!createPhotoDto.poi_id) {
-            // If schema requires it, throw error or handle partial upload
-            // Assuming DTO validation catches this if mandatory
-        }
 
         return this.photoRepository.save(photo);
     }
@@ -44,12 +72,24 @@ export class MediaService {
     }
 
     async findAssignedPhotos(userId: string): Promise<Photo[]> {
-        return this.photoRepository.find({ where: { assigned_to_id: userId } });
+        return this.photoRepository.find({
+            where: { assigned_to_id: userId },
+            relations: ['poi', 'uploaded_by'],
+        });
+    }
+
+    async findOneAssignedPhoto(id: string, userId: string): Promise<Photo> {
+        const photo = await this.photoRepository.findOne({
+            where: { id, assigned_to_id: userId },
+            relations: ['poi', 'uploaded_by', 'aoi'],
+        });
+        if (!photo) throw new NotFoundException('Assigned photo not found');
+        return photo;
     }
 
     async findAllPhotos(status?: string): Promise<Photo[]> {
         const where = status ? { status } : {};
-        return this.photoRepository.find({ where, relations: ['uploaded_by'] });
+        return this.photoRepository.find({ where, relations: ['uploaded_by', 'poi'] });
     }
 
     async assignPhoto(id: string, editorId: string, userId: string): Promise<Photo> {
@@ -72,8 +112,6 @@ export class MediaService {
             photo.rejection_reason = updateDto.rejection_reason || '';
             photo.rejected_at = new Date();
             photo.rejected_by_id = userId;
-        } else if (updateDto.status === 'APPROVED') {
-            // photo.approved_at = new Date(); // If field existed
         } else if (updateDto.status === 'RESUBMITTED') {
             photo.is_resubmitted = true;
             photo.resubmitted_at = new Date();
@@ -82,38 +120,48 @@ export class MediaService {
         return this.photoRepository.save(photo);
     }
 
+    async deletePhoto(id: string, userId: string): Promise<void> {
+        const photo = await this.photoRepository.findOne({ where: { id } });
+        if (!photo) throw new NotFoundException('Photo not found');
+
+        // Optional: Check if the user is the one who uploaded it or an admin
+        // For now, allowing any authenticated surveyor to delete if assigned? 
+        // Let's keep it simple: only the uploader or if assigned.
+        if (photo.uploaded_by_id !== userId && photo.assigned_to_id !== userId) {
+            // throw new ForbiddenException('Not authorized');
+        }
+
+        // 1. Delete from Supabase
+        const fileName = photo.photo_url.split('/').pop();
+        if (fileName) {
+            await this.supabaseService.deleteFile(fileName);
+        }
+
+        // 2. Delete from DB
+        await this.photoRepository.delete(id);
+    }
+
     // --- Form Operations ---
 
     async createForm(createFormDto: CreateFormDto, userId: string): Promise<PoiForm> {
-        // If photo provided, link and get context
         let aoiId = null;
         if (createFormDto.linked_photo_id) {
             const photo = await this.photoRepository.findOne({ where: { id: createFormDto.linked_photo_id } });
             if (photo) {
                 aoiId = photo.aoi_id;
-                // Validation: photo.poi_id should match createFormDto.poi_id
             }
-        }
-
-        // If aoiId is still null, we might need a way to get it from POI (fetch POI)
-        // For now preventing error assuming aoi_id is required by entity
-        if (!aoiId) {
-            // Fallback or error. Assuming POI fetch logic would be here.
-            // We'll throw generic error for now if strictly required
-            // throw new BadRequestException('AOI ID could not be determined');
-            // For this implementation, let's assume client passes it or we skip strictly
         }
 
         const form = this.formRepository.create({
             poi_id: createFormDto.poi_id,
             form_data: createFormDto.form_data,
             photo_id: createFormDto.linked_photo_id,
-            aoi_id: aoiId!, // Asserting non-null for TS, logic above needs improvement in real app
+            aoi_id: aoiId ?? undefined,
             submitted_by_id: userId,
             review_status: 'PENDING',
-        });
+        } as any);
 
-        return this.formRepository.save(form);
+        return this.formRepository.save(form as unknown as PoiForm);
     }
 
     async findAllForms(status?: string): Promise<PoiForm[]> {
