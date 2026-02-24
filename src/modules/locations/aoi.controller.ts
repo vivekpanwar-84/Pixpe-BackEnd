@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, Req, UnauthorizedException } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, Req, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { LocationsService } from './locations.service';
 import { CreateAoiDto, UpdateAoiDto, AssignAoiDto } from './dto/aoi.dto';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -44,7 +44,9 @@ export class AoiController {
     @Patch(':id/assign')
     @Roles(RoleSlug.ADMIN, RoleSlug.MANAGER)
     assign(@Param('id') id: string, @Body() assignDto: AssignAoiDto, @Req() req: any) {
-        return this.locationsService.assignAoi(id, assignDto.surveyor_id, req.user.userId);
+        const assigneeId = assignDto.surveyor_id || assignDto.editor_id;
+        if (!assigneeId) throw new BadRequestException('surveyor_id or editor_id must be provided');
+        return this.locationsService.assignAoi(id, assigneeId, req.user.userId);
     }
 
     // --- Verified: Update AOI Details ---

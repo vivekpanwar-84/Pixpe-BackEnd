@@ -70,9 +70,9 @@ export class LocationsService {
         return this.aoiRepository.save(aoi);
     }
 
-    async assignAoi(id: string, surveyorId: string, assignedBy: string): Promise<AoiArea> {
+    async assignAoi(id: string, assigneeId: string, assignedBy: string): Promise<AoiArea> {
         const aoi = await this.findOneAoi(id);
-        aoi.assigned_to_id = surveyorId;
+        aoi.assigned_to_id = assigneeId;
         aoi.assigned_by_id = assignedBy;
         aoi.assigned_at = new Date();
         aoi.status = 'ASSIGNED';

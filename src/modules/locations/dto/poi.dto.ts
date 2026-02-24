@@ -6,9 +6,8 @@ export class CreatePoiDto {
     aoi_id: string;
 
     // --- Business Identity ---
-    @IsString()
-    @IsNotEmpty()
-    business_name: string;
+    @IsOptional()
+    business_name?: string;
 
     @IsString()
     @IsOptional()
@@ -44,13 +43,11 @@ export class CreatePoiDto {
     contact_person_designation?: string;
 
     // --- Location (Required) ---
-    @IsNumber()
-    @IsNotEmpty()
-    latitude: number;
+    @IsOptional()
+    latitude?: number;
 
-    @IsNumber()
-    @IsNotEmpty()
-    longitude: number;
+    @IsOptional()
+    longitude?: number;
 
     @IsString()
     @IsOptional()

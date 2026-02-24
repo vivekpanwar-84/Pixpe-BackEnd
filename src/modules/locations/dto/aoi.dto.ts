@@ -60,6 +60,10 @@ export class UpdateAoiDto {
 
 export class AssignAoiDto {
     @IsUUID()
-    @IsNotEmpty()
-    surveyor_id: string;
+    @IsOptional()
+    surveyor_id?: string;
+
+    @IsUUID()
+    @IsOptional()
+    editor_id?: string;
 }

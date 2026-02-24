@@ -13,7 +13,7 @@ export class PoiPoint extends BaseEntity {
     aoi: AoiArea;
 
     // --- Business Identity ---
-    @Column({ type: 'varchar', length: 200 })
+    @Column({ type: 'varchar', length: 200, nullable: true })
     business_name: string;
 
     @Column({ type: 'varchar', length: 100, nullable: true })
@@ -42,10 +42,10 @@ export class PoiPoint extends BaseEntity {
     contact_person_designation: string;
 
     // --- Location ---
-    @Column({ type: 'decimal', precision: 10, scale: 8 })
+    @Column({ type: 'decimal', precision: 10, scale: 8, nullable: true })
     latitude: number;
 
-    @Column({ type: 'decimal', precision: 11, scale: 8 })
+    @Column({ type: 'decimal', precision: 11, scale: 8, nullable: true })
     longitude: number;
 
     @Column({ type: 'text', nullable: true })
