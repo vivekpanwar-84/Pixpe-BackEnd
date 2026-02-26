@@ -4,6 +4,7 @@ import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { CreateUserDto } from './dto/create-user.dto';
+import { SignupDto } from './dto/signup.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -12,7 +13,14 @@ export class AuthController {
         private readonly usersService: UsersService,
     ) { }
 
-    // 1. Login with Email + Password
+    // 1. Public Signup (Manager, Editor, Surveyor, Admin)
+    @Post('signup')
+    @HttpCode(HttpStatus.CREATED)
+    async signup(@Body() signupDto: SignupDto) {
+        return this.authService.signup(signupDto);
+    }
+
+    // 2. Login with Email + Password
     @Post('login')
     @HttpCode(HttpStatus.OK)
     async login(@Body() loginDto: LoginDto) {

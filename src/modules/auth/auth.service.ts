@@ -2,6 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { EmailService } from '../system/services/email.service';
+import { SignupDto } from './dto/signup.dto';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -11,6 +12,14 @@ export class AuthService {
         private jwtService: JwtService,
         private emailService: EmailService,
     ) { }
+
+    // --- 0. Public Signup (All Roles) ---
+    async signup(signupDto: SignupDto) {
+        const user = await this.usersService.createUser(signupDto);
+        // Re-fetch with role relation for token generation
+        const fullUser = await this.usersService.findByEmail(user.email);
+        return this.generateToken(fullUser);
+    }
 
     // --- 1. Login with Password (Admin/User) ---
     async loginWithPassword(email: string, pass: string) {

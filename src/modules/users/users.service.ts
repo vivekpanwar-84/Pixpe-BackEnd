@@ -47,10 +47,8 @@ export class UsersService {
         return this.usersRepository.save(newUser);
     }
 
-    // --- 2. Create Initial Admin (Dev Only) ---
+    // --- 2. Create User (Any Role — Public Signup) ---
     async createInitialAdmin(createUserDto: CreateUserDto): Promise<User> {
-        // Re-use create user logic but ensure role is ADMIN
-        if (createUserDto.role !== RoleSlug.ADMIN) throw new BadRequestException('Role must be ADMIN');
         return this.createUser(createUserDto);
     }
 
