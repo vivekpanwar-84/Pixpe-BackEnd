@@ -33,7 +33,7 @@ async function bootstrap() {
             title: 'Surveyor',
             slug: RoleSlug.SURVEYOR,
             description: 'Field Surveyor',
-            permissions: ['aoi.start', 'poi.create', 'photo.upload'],
+            permissions: ['aoi.start', 'photo.upload'],
         },
     ];
 

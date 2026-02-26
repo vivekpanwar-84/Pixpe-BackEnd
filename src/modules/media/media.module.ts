@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { MulterModule } from '@nestjs/platform-express';
 import { Photo } from './entities/photo.entity';
 import { PoiForm } from '../workflow/entities/poi-form.entity';
+import { AoiArea } from '../locations/entities/aoi-area.entity';
 import { MediaService } from './media.service';
 import { PhotosController } from './photos.controller';
 import { FormsController } from './forms.controller';
@@ -10,7 +11,7 @@ import { SupabaseService } from './supabase.service';
 
 @Module({
     imports: [
-        TypeOrmModule.forFeature([Photo, PoiForm]),
+        TypeOrmModule.forFeature([Photo, PoiForm, AoiArea]),
         MulterModule.register({ limits: { fileSize: 10 * 1024 * 1024 } }), // 10MB max
     ],
     controllers: [PhotosController, FormsController],

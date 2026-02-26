@@ -3,10 +3,6 @@ import { Type } from 'class-transformer';
 export class UploadPhotoDto {
     @IsUUID()
     @IsNotEmpty()
-    poi_id: string;
-
-    @IsUUID()
-    @IsNotEmpty()
     aoi_id: string;
 
     @IsString()

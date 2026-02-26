@@ -7,7 +7,6 @@ import { CreateRewardRequestDto, UpdateRewardStatusDto } from './dto/reward.dto'
 @Injectable()
 export class WorkflowService {
     private readonly RATE_PER_PHOTO = 10;
-    private readonly RATE_PER_POI = 50;
 
     constructor(
         @InjectRepository(Reward)
@@ -16,17 +15,14 @@ export class WorkflowService {
 
     async createRewardRequest(createDto: CreateRewardRequestDto, userId: string): Promise<Reward> {
         // Calculate estimated amount
-        const amount = (createDto.total_photos_approved * this.RATE_PER_PHOTO) +
-            (createDto.total_pois_created * this.RATE_PER_POI);
+        const amount = (createDto.total_photos_approved * this.RATE_PER_PHOTO);
 
         const reward = this.rewardRepository.create({
             user_id: userId,
             aoi_id: createDto.aoi_id,
             total_photos_submitted: createDto.total_photos_submitted,
             total_photos_approved: createDto.total_photos_approved,
-            total_pois_created: createDto.total_pois_created,
             reward_per_photo: this.RATE_PER_PHOTO,
-            reward_per_poi: this.RATE_PER_POI,
             reward_amount: amount,
             request_notes: createDto.request_notes,
             status: 'PENDING',

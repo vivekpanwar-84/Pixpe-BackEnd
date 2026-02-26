@@ -31,32 +31,44 @@ export class AoiArea extends BaseEntity {
     @Column({ type: 'varchar', length: 50, default: 'India' })
     country: string;
 
-    @Column({ type: 'int', default: 0 })
-    estimated_poi_count: number;
-
-    @Column({ type: 'int', default: 0 })
-    actual_poi_count: number;
-
     @Column({ type: 'decimal', precision: 10, scale: 4, nullable: true })
     area_size_sqkm: number;
 
-    // --- Assignment ---
+    // --- Surveyor Assignment ---
     @Column({ type: 'uuid', nullable: true })
-    assigned_to_id: string;
+    assigned_to_surveyor_id: string;
 
     @ManyToOne(() => User)
-    @JoinColumn({ name: 'assigned_to_id' })
-    assigned_to: User;
+    @JoinColumn({ name: 'assigned_to_surveyor_id' })
+    assigned_to_surveyor: User;
 
     @Column({ type: 'timestamptz', nullable: true })
-    assigned_at: Date;
+    assigned_at_surveyor: Date;
 
     @Column({ type: 'uuid', nullable: true })
-    assigned_by_id: string;
+    assigned_by_surveyor_id: string;
 
     @ManyToOne(() => User)
-    @JoinColumn({ name: 'assigned_by_id' })
-    assigned_by: User;
+    @JoinColumn({ name: 'assigned_by_surveyor_id' })
+    assigned_by_surveyor: User;
+
+    // --- Editor Assignment ---
+    @Column({ type: 'uuid', nullable: true })
+    assigned_to_editor_id: string;
+
+    @ManyToOne(() => User)
+    @JoinColumn({ name: 'assigned_to_editor_id' })
+    assigned_to_editor: User;
+
+    @Column({ type: 'timestamptz', nullable: true })
+    assigned_at_editor: Date;
+
+    @Column({ type: 'uuid', nullable: true })
+    assigned_by_editor_id: string;
+
+    @ManyToOne(() => User)
+    @JoinColumn({ name: 'assigned_by_editor_id' })
+    assigned_by_editor: User;
 
     // --- Status ---
     @Column({ type: 'varchar', length: 20, default: 'DRAFT' })

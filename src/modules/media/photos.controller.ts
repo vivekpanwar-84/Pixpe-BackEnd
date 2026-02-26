@@ -48,6 +48,15 @@ export class PhotosController {
         return this.mediaService.findOneAssignedPhoto(id, req.user.userId);
     }
 
+    @Get('aoi/:aoiId/editor/:editorId')
+    @Roles(RoleSlug.EDITOR, RoleSlug.ADMIN, RoleSlug.MANAGER)
+    async getPhotosByAoiAndEditor(
+        @Param('aoiId') aoiId: string,
+        @Param('editorId') editorId: string,
+    ) {
+        return this.mediaService.findPhotosByAoiAndEditor(aoiId, editorId);
+    }
+
     // --- Admin/Manager: View All Photos ---
     @Get()
     @Roles(RoleSlug.ADMIN, RoleSlug.MANAGER)

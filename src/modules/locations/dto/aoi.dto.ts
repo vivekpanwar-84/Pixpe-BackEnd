@@ -67,3 +67,17 @@ export class AssignAoiDto {
     @IsOptional()
     editor_id?: string;
 }
+
+export class BulkAssignAoiDto {
+    @IsUUID(undefined, { each: true })
+    @IsNotEmpty({ each: true })
+    aoi_ids: string[];
+
+    @IsUUID()
+    @IsOptional()
+    surveyor_id?: string;
+
+    @IsUUID()
+    @IsOptional()
+    editor_id?: string;
+}

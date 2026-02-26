@@ -1,1279 +1,731 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Pixpe Backend — API Test Guide </title>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Fira+Code:wght@400;500&display=swap');
-
-    :root {
-      --primary: #6366f1;
-      --primary-dark: #4f46e5;
-      --success: #10b981;
-      --warning: #f59e0b;
-      --danger: #ef4444;
-      --info: #3b82f6;
-      --dark: #0f172a;
-      --card-bg: #1e293b;
-      --border: #334155;
-      --text: #e2e8f0;
-      --muted: #94a3b8;
-      --code-bg: #0f172a;
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    body {
-      font-family: 'Inter', sans-serif;
-      background: #0a0f1e;
-      color: var(--text);
-      padding: 20px;
-      font-size: 13px;
-      line-height: 1.6;
-    }
-
-    .page {
-      max-width: 900px;
-      margin: 0 auto;
-    }
-
-    /* ── HEADER ── */
-    .header {
-      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #06b6d4 100%);
-      border-radius: 16px;
-      padding: 36px 40px;
-      margin-bottom: 28px;
-      text-align: center;
-    }
-
-    .header h1 {
-      font-size: 28px;
-      font-weight: 700;
-      color: #fff;
-      letter-spacing: -0.5px;
-    }
-
-    .header p {
-      color: rgba(255, 255, 255, 0.8);
-      margin-top: 6px;
-      font-size: 14px;
-    }
-
-    .base-url {
-      display: inline-block;
-      background: rgba(0, 0, 0, 0.3);
-      color: #a5f3fc;
-      font-family: 'Fira Code', monospace;
-      font-size: 14px;
-      padding: 6px 16px;
-      border-radius: 20px;
-      margin-top: 12px;
-    }
-
-    /* ── FLOW BANNER ----── */
-    .flow {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 16px 20px;
-      margin-bottom: 28px;
-    }
-
-    .flow h3 {
-      color: var(--primary);
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 10px;
-    }
-
-    .flow-steps {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      align-items: center;
-    }
-
-    .flow-step {
-      background: linear-gradient(135deg, var(--primary), #8b5cf6);
-      color: #fff;
-      padding: 4px 12px;
-      border-radius: 20px;
-      font-size: 11px;
-      font-weight: 600;
-    }
-
-    .flow-arrow {
-      color: var(--muted);
-      font-size: 16px;
-    }
-
-    /* ── SECTION ── */
-    .section {
-      margin-bottom: 32px;
-    }
-
-    .section-header {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 14px;
-      padding-bottom: 8px;
-      border-bottom: 2px solid var(--border);
-    }
-
-    .section-icon {
-      font-size: 20px;
-    }
-
-    .section-title {
-      font-size: 16px;
-      font-weight: 700;
-      color: #fff;
-    }
-
-    .section-subtitle {
-      font-size: 11px;
-      color: var(--muted);
-      margin-left: auto;
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      padding: 2px 8px;
-      border-radius: 10px;
-    }
-
-    /* ── ENDPOINT CARD ── */
-    .endpoint {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      margin-bottom: 12px;
-      overflow: hidden;
-    }
-
-    .endpoint-header {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 14px;
-      background: rgba(255, 255, 255, 0.03);
-      border-bottom: 1px solid var(--border);
-    }
-
-    .method {
-      font-family: 'Fira Code', monospace;
-      font-size: 11px;
-      font-weight: 700;
-      padding: 3px 9px;
-      border-radius: 5px;
-      letter-spacing: 0.5px;
-      min-width: 50px;
-      text-align: center;
-    }
-
-    .GET {
-      background: rgba(16, 185, 129, 0.15);
-      color: #34d399;
-      border: 1px solid rgba(16, 185, 129, 0.3);
-    }
-
-    .POST {
-      background: rgba(99, 102, 241, 0.15);
-      color: #818cf8;
-      border: 1px solid rgba(99, 102, 241, 0.3);
-    }
-
-    .PATCH {
-      background: rgba(245, 158, 11, 0.15);
-      color: #fbbf24;
-      border: 1px solid rgba(245, 158, 11, 0.3);
-    }
-
-    .DELETE {
-      background: rgba(239, 68, 68, 0.15);
-      color: #f87171;
-      border: 1px solid rgba(239, 68, 68, 0.3);
-    }
-
-    .endpoint-path {
-      font-family: 'Fira Code', monospace;
-      font-size: 13px;
-      color: #e2e8f0;
-      flex: 1;
-    }
-
-    .endpoint-name {
-      font-size: 11px;
-      color: var(--muted);
-      font-style: italic;
-    }
-
-    .endpoint-body {
-      padding: 12px 14px;
-    }
-
-    .role-tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 5px;
-      margin-bottom: 10px;
-    }
-
-    .role-tag {
-      font-size: 10px;
-      font-weight: 600;
-      padding: 2px 8px;
-      border-radius: 10px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .role-admin {
-      background: rgba(239, 68, 68, 0.15);
-      color: #f87171;
-      border: 1px solid rgba(239, 68, 68, 0.3);
-    }
-
-    .role-manager {
-      background: rgba(245, 158, 11, 0.15);
-      color: #fbbf24;
-      border: 1px solid rgba(245, 158, 11, 0.3);
-    }
-
-    .role-editor {
-      background: rgba(99, 102, 241, 0.15);
-      color: #818cf8;
-      border: 1px solid rgba(99, 102, 241, 0.3);
-    }
-
-    .role-surveyor {
-      background: rgba(16, 185, 129, 0.15);
-      color: #34d399;
-      border: 1px solid rgba(16, 185, 129, 0.3);
-    }
-
-    .role-public {
-      background: rgba(148, 163, 184, 0.15);
-      color: #94a3b8;
-      border: 1px solid rgba(148, 163, 184, 0.3);
-    }
-
-    .label {
-      font-size: 10px;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-      font-weight: 600;
-      margin-bottom: 5px;
-    }
-
-    pre {
-      background: var(--code-bg);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 12px 14px;
-      font-family: 'Fira Code', monospace;
-      font-size: 11.5px;
-      color: #93c5fd;
-      overflow-x: auto;
-      margin-top: 4px;
-      white-space: pre-wrap;
-      word-break: break-all;
-    }
-
-    .note {
-      font-size: 11px;
-      color: var(--muted);
-      margin-top: 6px;
-      padding: 6px 10px;
-      background: rgba(99, 102, 241, 0.08);
-      border-left: 3px solid var(--primary);
-      border-radius: 0 5px 5px 0;
-    }
-
-    /* ── TABLES ── */
-    .table-wrap {
-      overflow-x: auto;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 12px;
-    }
-
-    th {
-      background: rgba(99, 102, 241, 0.15);
-      color: #818cf8;
-      font-weight: 600;
-      padding: 8px 12px;
-      text-align: left;
-      border: 1px solid var(--border);
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    td {
-      padding: 8px 12px;
-      border: 1px solid var(--border);
-      color: var(--text);
-      font-family: 'Fira Code', monospace;
-      font-size: 11.5px;
-    }
-
-    tr:nth-child(even) td {
-      background: rgba(255, 255, 255, 0.02);
-    }
-
-    /* ── STATUS FLOW ── */
-    .status-flows {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-
-    .status-flow {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 14px;
-    }
-
-    .status-flow h4 {
-      font-size: 11px;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-      margin-bottom: 8px;
-    }
-
-    .flow-chain {
-      display: flex;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 5px;
-    }
-
-    .status-pill {
-      font-size: 10px;
-      font-weight: 600;
-      padding: 3px 8px;
-      border-radius: 10px;
-    }
-
-    .s-draft {
-      background: rgba(148, 163, 184, 0.15);
-      color: #94a3b8;
-    }
-
-    .s-assigned {
-      background: rgba(245, 158, 11, 0.15);
-      color: #fbbf24;
-    }
-
-    .s-active {
-      background: rgba(99, 102, 241, 0.15);
-      color: #818cf8;
-    }
-
-    .s-success {
-      background: rgba(16, 185, 129, 0.15);
-      color: #34d399;
-    }
-
-    .s-danger {
-      background: rgba(239, 68, 68, 0.15);
-      color: #f87171;
-    }
-
-    .arr {
-      color: var(--muted);
-    }
-
-    /* ── PRINT ── */
-    @media print {
-      body {
-        background: #fff;
-        color: #000;
-      }
-
-      .header {
-        background: #6366f1 !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-      }
-
-      pre {
-        background: #f1f5f9;
-        color: #1e293b;
-        border-color: #cbd5e1;
-      }
-
-      .endpoint {
-        border-color: #cbd5e1;
-      }
-
-      .endpoint-header {
-        background: #f8fafc;
-        border-bottom-color: #e2e8f0;
-      }
-
-      .section-header {
-        border-bottom-color: #e2e8f0;
-      }
-
-      .section-title {
-        color: #0f172a;
-      }
-
-      .endpoint-path {
-        color: #0f172a;
-      }
-
-      .endpoint-name {
-        color: #64748b;
-      }
-
-      .flow,
-      .status-flow {
-        border-color: #e2e8f0;
-        background: #f8fafc;
-      }
-
-      table,
-      th,
-      td {
-        border-color: #cbd5e1;
-      }
-
-      th {
-        background: #e0e7ff;
-        color: #4f46e5;
-      }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PIXPE Backend – API Test Guide</title>
+<style>
+  :root{--bg:#0f1117;--card:#1a1d27;--border:#2a2d3e;--accent:#6c63ff;--green:#22c55e;--red:#ef4444;--yellow:#f59e0b;--blue:#3b82f6;--text:#e2e8f0;--muted:#64748b;--code:#1e2235;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;line-height:1.6;}
+  header{background:linear-gradient(135deg,#2d1b69,#1a1d27);padding:40px 32px;border-bottom:1px solid var(--border);}
+  header h1{font-size:2rem;color:#fff;margin-bottom:8px;}
+  header p{color:var(--muted);font-size:.95rem;}
+  .badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:.75rem;font-weight:700;margin-right:6px;}
+  .badge.POST{background:#1a3a2a;color:var(--green);}
+  .badge.GET{background:#1a2a3a;color:var(--blue);}
+  .badge.PATCH{background:#3a2a1a;color:var(--yellow);}
+  .badge.DELETE{background:#3a1a1a;color:var(--red);}
+  .role{display:inline-block;padding:1px 8px;border-radius:12px;font-size:.72rem;background:#2a2d3e;color:var(--muted);margin-left:4px;}
+  .container{max-width:1100px;margin:0 auto;padding:32px;}
+  .toc{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px 24px;margin-bottom:32px;}
+  .toc h2{font-size:1rem;color:var(--accent);margin-bottom:12px;}
+  .toc a{color:var(--text);text-decoration:none;display:inline-block;margin:3px 12px;font-size:.9rem;}
+  .toc a:hover{color:var(--accent);}
+  .section{margin-bottom:40px;}
+  .section-title{font-size:1.3rem;font-weight:700;color:#fff;padding:12px 0 8px;border-bottom:2px solid var(--accent);margin-bottom:16px;}
+  .api-card{background:var(--card);border:1px solid var(--border);border-radius:10px;margin-bottom:14px;overflow:hidden;}
+  .api-header{display:flex;align-items:center;gap:12px;padding:14px 20px;cursor:pointer;user-select:none;}
+  .api-header:hover{background:#1e2133;}
+  .api-header .path{font-family:monospace;font-size:.95rem;color:var(--text);flex:1;}
+  .api-header .desc{font-size:.82rem;color:var(--muted);}
+  .api-body{padding:16px 20px;border-top:1px solid var(--border);display:none;}
+  .api-card.open .api-body{display:block;}
+  .api-card.open .api-header{background:#1e2133;}
+  label{display:block;font-size:.8rem;color:var(--muted);margin-bottom:4px;margin-top:12px;}
+  label:first-of-type{margin-top:0;}
+  pre{background:var(--code);border:1px solid var(--border);border-radius:8px;padding:14px;font-size:.82rem;overflow-x:auto;color:#a5b4fc;white-space:pre-wrap;}
+  .note{background:#1a263a;border-left:3px solid var(--blue);padding:10px 14px;border-radius:0 8px 8px 0;font-size:.83rem;color:#93c5fd;margin-top:10px;}
+  .info-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;margin-bottom:20px;}
+  .info-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;}
+  .info-card h3{font-size:.8rem;color:var(--muted);margin-bottom:4px;}
+  .info-card p{font-size:.9rem;color:var(--text);font-family:monospace;}
+  kbd{background:#2a2d3e;border:1px solid #3a3d4e;border-radius:4px;padding:1px 6px;font-size:.8rem;}
+</style>
 </head>
-
 <body>
-  <div class="page">
+<header>
+  <h1>🗺️ PIXPE Backend – API Test Guide</h1>
+  <p>Base URL: <strong>http://localhost:3000</strong> &nbsp;|&nbsp; All protected routes require <kbd>Authorization: Bearer &lt;token&gt;</kbd></p>
+</header>
 
-    <!-- HEADER -->
-    <div class="header">
-      <h1>🧪 Pixpe Backend — API Test Guide</h1>
-      <p>Complete endpoint reference with request bodies &amp; role permissions</p>
-      <div class="base-url">Base URL: http://localhost:3000</div>
-    </div>
+<div class="container">
 
-    <!-- FLOW -->
-    <div class="flow">
-      <h3>⚡ Recommended Testing Flow</h3>
-      <div class="flow-steps">
-        <span class="flow-step">1. Admin Signup</span><span class="flow-arrow">→</span>
-        <span class="flow-step">2. Login → Token</span><span class="flow-arrow">→</span>
-        <span class="flow-step">3. Create Users</span><span class="flow-arrow">→</span>
-        <span class="flow-step">4. Create AOI</span><span class="flow-arrow">→</span>
-        <span class="flow-step">5. Assign Surveyor</span><span class="flow-arrow">→</span>
-        <span class="flow-step">6. Upload Photo</span><span class="flow-arrow">→</span>
-        <span class="flow-step">7. Submit Form</span><span class="flow-arrow">→</span>
-        <span class="flow-step">8. Request Payout</span>
+  <div class="info-grid">
+    <div class="info-card"><h3>Roles Available</h3><p>admin · manager · surveyor · editor</p></div>
+    <div class="info-card"><h3>Auth Type</h3><p>JWT Bearer Token</p></div>
+    <div class="info-card"><h3>File Uploads</h3><p>multipart/form-data</p></div>
+    <div class="info-card"><h3>JSON Requests</h3><p>Content-Type: application/json</p></div>
+  </div>
+
+  <div class="toc">
+    <h2>📑 Table of Contents</h2>
+    <a href="#auth">🔐 Auth</a>
+    <a href="#users">👤 Users</a>
+    <a href="#aoi">📍 AOI</a>
+    <a href="#photos">📷 Photos</a>
+    <a href="#forms">📝 Forms</a>
+    <a href="#ai">🤖 AI</a>
+    <a href="#rewards">💰 Rewards</a>
+    <a href="#system">⚙️ System</a>
+  </div>
+
+  <!-- ===== AUTH ===== -->
+  <div class="section" id="auth">
+    <div class="section-title">🔐 Auth — /auth</div>
+
+    <div class="api-card">
+      <div class="api-header" onclick="toggle(this)">
+        <span class="badge POST">POST</span><span class="path">/auth/login</span>
+        <span class="desc">Login with email + password</span>
+      </div>
+      <div class="api-body">
+        <label>Request Body (JSON)</label>
+        <pre>{ "email": "admin@pixpe.com", "password": "admin123" }</pre>
+        <label>Success Response</label>
+        <pre>{ "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." }</pre>
+        <div class="note">💡 Copy the access_token and use it as Bearer token for all protected routes.</div>
       </div>
     </div>
 
-    <!-- ══ AUTH ══ -->
-    <div class="section">
-      <div class="section-header">
-        <span class="section-icon">🔐</span>
-        <span class="section-title">AUTH MODULE</span>
-        <span class="section-subtitle">No token needed</span>
+    <div class="api-card">
+      <div class="api-header" onclick="toggle(this)">
+        <span class="badge POST">POST</span><span class="path">/auth/otp/request</span>
+        <span class="desc">Request Email OTP</span>
       </div>
-
-      <div class="endpoint">
-        <div class="endpoint-header">
-          <span class="method POST">POST</span>
-          <span class="endpoint-path">/auth/admin/signup</span>
-          <span class="endpoint-name">Create Initial Admin (Dev only)</span>
-        </div>
-        <div class="endpoint-body">
-          <div class="role-tags"><span class="role-tag role-public">Public</span></div>
-          <div class="label">Request Body</div>
-          <pre>{ "email": "admin@pixpe.com", "password": "Admin@123", "name": "Super Admin", "role": "admin" }</pre>
-        </div>
-      </div>
-
-      <div class="endpoint">
-        <div class="endpoint-header">
-          <span class="method POST">POST</span>
-          <span class="endpoint-path">/auth/login</span>
-          <span class="endpoint-name">Email + Password Login</span>
-        </div>
-        <div class="endpoint-body">
-          <div class="role-tags"><span class="role-tag role-public">Public</span></div>
-          <div class="label">Request Body</div>
-          <pre>{ "email": "admin@pixpe.com", "password": "Admin@123" }</pre>
-          <div class="label" style="margin-top:10px">Response</div>
-          <pre>{ "access_token": "eyJhbGciOiJIUzI1NiJ9...", "user": { "id": "uuid", "role": "admin" } }</pre>
-          <div class="note">💡 Save <code>access_token</code> — add to header:
-            <code>Authorization: Bearer &lt;TOKEN&gt;</code>
-          </div>
-        </div>
-      </div>
-
-      <div class="endpoint">
-        <div class="endpoint-header">
-          <span class="method POST">POST</span>
-          <span class="endpoint-path">/auth/otp/request</span>
-          <span class="endpoint-name">Request Email OTP</span>
-        </div>
-        <div class="endpoint-body">
-          <div class="role-tags"><span class="role-tag role-public">Public</span></div>
-          <div class="label">Request Body</div>
-          <pre>{ "email": "surveyor@pixpe.com" }</pre>
-        </div>
-      </div>
-
-      <div class="endpoint">
-        <div class="endpoint-header">
-          <span class="method POST">POST</span>
-          <span class="endpoint-path">/auth/otp/verify</span>
-          <span class="endpoint-name">Verify OTP &amp; Get Token</span>
-        </div>
-        <div class="endpoint-body">
-          <div class="role-tags"><span class="role-tag role-public">Public</span></div>
-          <div class="label">Request Body</div>
-          <pre>{ "email": "surveyor@pixpe.com", "otp": "123456" }</pre>
-        </div>
+      <div class="api-body">
+        <label>Request Body (JSON)</label>
+        <pre>{ "email": "admin@pixpe.com" }</pre>
       </div>
     </div>
 
-    <!-- ══ USERS ══ -->
-    <div class="section">
-      <div class="section-header">
-        <span class="section-icon">👥</span>
-        <span class="section-title">USERS MODULE</span>
-        <span class="section-subtitle">Use Admin token</span>
+    <div class="api-card">
+      <div class="api-header" onclick="toggle(this)">
+        <span class="badge POST">POST</span><span class="path">/auth/otp/verify</span>
+        <span class="desc">Verify Email OTP</span>
       </div>
-
-      <div class="endpoint">
-        <div class="endpoint-header">
-          <span class="method POST">POST</span>
-          <span class="endpoint-path">/users</span>
-          <span class="endpoint-name">Create User</span>
-        </div>
-        <div class="endpoint-body">
-          <div class="role-tags"><span class="role-tag role-admin">Admin</span><span
-              class="role-tag role-manager">Manager</span></div>
-          <div class="label">Create Manager</div>
-          <pre>{ "email": "manager@pixpe.com", "password": "Manager@123", "name": "Area Manager", "role": "manager" }</pre>
-          <div class="label" style="margin-top:10px">Create Editor</div>
-          <pre>{ "email": "editor@pixpe.com", "password": "Editor@123", "name": "Data Editor", "role": "editor" }</pre>
-          <div class="label" style="margin-top:10px">Create Surveyor</div>
-          <pre>{ "email": "surveyor@pixpe.com", "password": "Surveyor@123", "name": "Field Surveyor", "role": "surveyor", "phone": "9876543210" }</pre>
-        </div>
-      </div>
-
-      <div class="endpoint">
-        <div class="endpoint-header">
-          <span class="method GET">GET</span>
-          <span class="endpoint-path">/users</span>
-          <span class="endpoint-name">List All Users</span>
-        </div>
-        <div class="endpoint-body">
-          <div class="role-tags"><span class="role-tag role-admin">Admin</span><span
-              class="role-tag role-manager">Manager</span></div>
-          <div class="note">Optional query: <code>?role=surveyor</code></div>
-        </div>
-      </div>
-
-      <div class="endpoint">
-        <div class="endpoint-header">
-          <span class="method GET">GET</span>
-          <span class="endpoint-path">/users/:id</span>
-          <span class="endpoint-name">Get Single User</span>
-        </div>
-        <div class="endpoint-body">
-          <div class="role-tags"><span class="role-tag role-admin">Admin</span></div>
-        </div>
-      </div>
-
-      <div class="endpoint">
-        <div class="endpoint-header">
-          <span class="method PATCH">PATCH</span>
-          <span class="endpoint-path">/users/:id/role</span>
-          <span class="endpoint-name">Change Role</span>
-        </div>
-        <div class="endpoint-body">
-          <div class="role-tags"><span class="role-tag role-admin">Admin</span></div>
-          <pre>{ "role": "manager" }</pre>
-        </div>
-      </div>
-
-      <div class="endpoint">
-        <div class="endpoint-header">
-          <span class="method PATCH">PATCH</span>
-          <span class="endpoint-path">/users/:id/status</span>
-          <span class="endpoint-name">Activate / Deactivate</span>
-        </div>
-        <div class="endpoint-body">
-          <div class="role-tags"><span class="role-tag role-admin">Admin</span><span
-              class="role-tag role-manager">Manager</span></div>
-          <pre>{ "isActive": false }</pre>
-        </div>
-      </div>
-
-      <div class="endpoint">
-        <div class="endpoint-header">
-          <span class="method PATCH">PATCH</span>
-          <span class="endpoint-path">/users/:id/kyc-status</span>
-          <span class="endpoint-name">Approve / Reject KYC</span>
-        </div>
-        <div class="endpoint-body">
-          <div class="role-tags"><span class="role-tag role-admin">Admin</span><span
-              class="role-tag role-manager">Manager</span></div>
-          <div class="label">Approve</div>
-          <pre>{ "status": "APPROVED" }</pre>
-          <div class="label" style="margin-top:8px">Reject</div>
-          <pre>{ "status": "REJECTED", "reason": "Invalid document" }</pre>
-        </div>
-      </div>
-
-      <div class="endpoint">
-        <div class="endpoint-header">
-          <span class="method GET">GET</span>
-          <span class="endpoint-path">/users/kyc-pending</span>
-          <span class="endpoint-name">View Pending KYC</span>
-        </div>
-        <div class="endpoint-body">
-          <div class="role-tags"><span class="role-tag role-admin">Admin</span><span
-              class="role-tag role-manager">Manager</span></div>
-        </div>
-      </div>
-
-      <div class="endpoint">
-        <div class="endpoint-header">
-          <span class="method PATCH">PATCH</span>
-          <span class="endpoint-path">/users/profile</span>
-          <span class="endpoint-name">Update Own Profile</span>
-        </div>
-        <div class="endpoint-body">
-          <div class="role-tags"><span class="role-tag role-surveyor">Surveyor</span><span
-              class="role-tag role-editor">Editor</span><span class="role-tag role-manager">Manager</span></div>
-          <pre>{ "name": "Updated Name" }</pre>
-        </div>
-      </div>
-
-      <div class="endpoint">
-        <div class="endpoint-header">
-          <span class="method DELETE">DELETE</span>
-          <span class="endpoint-path">/users/:id</span>
-          <span class="endpoint-name">Delete User</span>
-        </div>
-        <div class="endpoint-body">
-          <div class="role-tags"><span class="role-tag role-admin">Admin</span></div>
-        </div>
+      <div class="api-body">
+        <label>Request Body (JSON)</label>
+        <pre>{ "email": "admin@pixpe.com", "otp": "123456" }</pre>
       </div>
     </div>
 
-    <!-- ══ AOI ══ -->
-    <div class="section">
-      <div class="section-header">
-        <span class="section-icon">🗺️</span>
-        <span class="section-title">AOI MODULE</span>
-        <span class="section-subtitle">Area of Interest</span>
+    <div class="api-card">
+      <div class="api-header" onclick="toggle(this)">
+        <span class="badge POST">POST</span><span class="path">/auth/admin/signup</span>
+        <span class="desc">Create Initial Admin (Dev Only)</span>
       </div>
+      <div class="api-body">
+        <label>Request Body (JSON)</label>
+        <pre>{ "email": "admin@pixpe.com", "name": "Admin User", "password": "admin123", "phone": "9999999999", "role": "admin" }</pre>
+        <div class="note">⚠️ Role values: admin | manager | surveyor | editor</div>
+      </div>
+    </div>
+  </div>
 
-      <div class="endpoint">
-        <div class="endpoint-header">
-          <span class="method POST">POST</span>
-          <span class="endpoint-path">/aoi</span>
-          <span class="endpoint-name">Create AOI</span>
-        </div>
-        <div class="endpoint-body">
-          <div class="role-tags"><span class="role-tag role-admin">Admin</span><span
-              class="role-tag role-manager">Manager</span></div>
-          <pre>{
-  "aoi_name": "Connaught Place Block A",
-  "center_latitude": 28.6328,
-  "center_longitude": 77.2197,
+  <!-- ===== USERS ===== -->
+  <div class="section" id="users">
+    <div class="section-title">👤 Users — /users</div>
+
+    <div class="api-card">
+      <div class="api-header" onclick="toggle(this)">
+        <span class="badge POST">POST</span><span class="path">/users</span>
+        <span class="role">admin</span><span class="role">manager</span>
+        <span class="desc">Create a new user</span>
+      </div>
+      <div class="api-body">
+        <label>Headers</label>
+        <pre>Authorization: Bearer &lt;token&gt;
+Content-Type: application/json</pre>
+        <label>Request Body</label>
+        <pre>{ "email": "surveyor@pixpe.com", "name": "John Surveyor", "password": "pass1234", "phone": "9876543210", "role": "surveyor" }</pre>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-header" onclick="toggle(this)">
+        <span class="badge GET">GET</span><span class="path">/users?role=surveyor</span>
+        <span class="role">admin</span><span class="role">manager</span>
+        <span class="desc">List all users (optional role filter)</span>
+      </div>
+      <div class="api-body">
+        <label>Query Params</label>
+        <pre>role = admin | manager | surveyor | editor  (optional)</pre>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-header" onclick="toggle(this)">
+        <span class="badge GET">GET</span><span class="path">/users/profile</span>
+        <span class="desc">Get my own profile (any role)</span>
+      </div>
+      <div class="api-body"><div class="note">No body needed. JWT identifies the user.</div></div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-header" onclick="toggle(this)">
+        <span class="badge GET">GET</span><span class="path">/users/kyc-pending</span>
+        <span class="role">admin</span><span class="role">manager</span>
+        <span class="desc">Get all users with pending KYC</span>
+      </div>
+      <div class="api-body"><div class="note">No body needed.</div></div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-header" onclick="toggle(this)">
+        <span class="badge GET">GET</span><span class="path">/users/kyc/status</span>
+        <span class="desc">Get my KYC status (any role)</span>
+      </div>
+      <div class="api-body">
+        <label>Success Response</label>
+        <pre>{ "kyc_status": "PENDING", "is_verified": false, "reason": null }</pre>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-header" onclick="toggle(this)">
+        <span class="badge GET">GET</span><span class="path">/users/:id</span>
+        <span class="role">admin</span>
+        <span class="desc">Get specific user by UUID</span>
+      </div>
+      <div class="api-body"><label>Params</label><pre>:id = USER_UUID</pre></div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-header" onclick="toggle(this)">
+        <span class="badge PATCH">PATCH</span><span class="path">/users/profile</span>
+        <span class="desc">Update my own profile (any role)</span>
+      </div>
+      <div class="api-body">
+        <label>Request Body</label>
+        <pre>{ "name": "New Name", "email": "new@pixpe.com" }</pre>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-header" onclick="toggle(this)">
+        <span class="badge PATCH">PATCH</span><span class="path">/users/:id/role</span>
+        <span class="role">admin</span>
+        <span class="desc">Change user role</span>
+      </div>
+      <div class="api-body">
+        <label>Request Body</label>
+        <pre>{ "role": "editor" }</pre>
+        <div class="note">role values: admin | manager | surveyor | editor</div>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-header" onclick="toggle(this)">
+        <span class="badge PATCH">PATCH</span><span class="path">/users/:id/status</span>
+        <span class="role">admin</span><span class="role">manager</span>
+        <span class="desc">Activate or deactivate user</span>
+      </div>
+      <div class="api-body">
+        <label>Request Body</label>
+        <pre>{ "isActive": true }</pre>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-header" onclick="toggle(this)">
+        <span class="badge POST">POST</span><span class="path">/users/kyc</span>
+        <span class="desc">Submit KYC document (any role)</span>
+      </div>
+      <div class="api-body">
+        <label>Request (multipart/form-data)</label>
+        <pre>file = &lt;KYC document file - image or PDF&gt;</pre>
+        <div class="note">Send as form-data with key "file"</div>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-header" onclick="toggle(this)">
+        <span class="badge PATCH">PATCH</span><span class="path">/users/:id/kyc-status</span>
+        <span class="role">admin</span><span class="role">manager</span>
+        <span class="desc">Approve or reject KYC</span>
+      </div>
+      <div class="api-body">
+        <label>Request Body</label>
+        <pre>{ "status": "APPROVED", "reason": "" }
+// status: PENDING | APPROVED | REJECTED</pre>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-header" onclick="toggle(this)">
+        <span class="badge DELETE">DELETE</span><span class="path">/users/:id</span>
+        <span class="role">admin</span>
+        <span class="desc">Soft delete user</span>
+      </div>
+      <div class="api-body"><label>Params</label><pre>:id = USER_UUID</pre></div>
+    </div>
+  </div>
+
+  <!-- ===== AOI ===== -->
+  <div class="section" id="aoi">
+    <div class="section-title">📍 AOI (Area of Interest) — /aoi</div>
+
+    <div class="api-card">
+      <div class="api-header" onclick="toggle(this)">
+        <span class="badge POST">POST</span><span class="path">/aoi</span>
+        <span class="role">admin</span><span class="role">manager</span>
+        <span class="desc">Create a new AOI</span>
+      </div>
+      <div class="api-body">
+        <label>Request Body</label>
+        <pre>{
+  "aoi_name": "Connaught Place Zone A",
   "boundary_geojson": {
     "type": "Polygon",
-    "coordinates": [[[77.21, 28.63],[77.23, 28.63],[77.23, 28.64],[77.21, 28.64],[77.21, 28.63]]]
+    "coordinates": [[[77.21,28.63],[77.22,28.63],[77.22,28.64],[77.21,28.64],[77.21,28.63]]]
   },
+  "center_latitude": 28.6315,
+  "center_longitude": 77.2167,
   "city": "New Delhi",
   "state": "Delhi",
   "pin_code": "110001",
-  "priority": "HIGH"
+  "priority": "HIGH",
+  "deadline": "2025-12-31"
 }</pre>
-        </div>
-      </div>
-
-      <div class="endpoint">
-        <div class="endpoint-header">
-          <span class="method GET">GET</span>
-          <span class="endpoint-path">/aoi</span>
-          <span class="endpoint-name">List All AOIs</span>
-        </div>
-        <div class="endpoint-body">
-          <div class="role-tags"><span class="role-tag role-admin">Admin</span><span
-              class="role-tag role-manager">Manager</span></div>
-        </div>
-      </div>
-
-      <div class="endpoint">
-        <div class="endpoint-header">
-          <span class="method PATCH">PATCH</span>
-          <span class="endpoint-path">/aoi/:id/assign</span>
-          <span class="endpoint-name">Assign Surveyor to AOI</span>
-        </div>
-        <div class="endpoint-body">
-          <div class="role-tags"><span class="role-tag role-admin">Admin</span><span
-              class="role-tag role-manager">Manager</span></div>
-          <pre>{ "surveyor_id": "&lt;SURVEYOR_USER_ID&gt;" }</pre>
-        </div>
-      </div>
-
-      <div class="endpoint">
-        <div class="endpoint-header">
-          <span class="method GET">GET</span>
-          <span class="endpoint-path">/aoi/assigned</span>
-          <span class="endpoint-name">View My Assigned AOIs</span>
-        </div>
-        <div class="endpoint-body">
-          <div class="role-tags"><span class="role-tag role-surveyor">Surveyor</span><span
-              class="role-tag role-editor">Editor</span></div>
-        </div>
-      </div>
-
-      <div class="endpoint">
-        <div class="endpoint-header">
-          <span class="method PATCH">PATCH</span>
-          <span class="endpoint-path">/aoi/:id/start</span>
-          <span class="endpoint-name">Start AOI (IN_PROGRESS)</span>
-        </div>
-        <div class="endpoint-body">
-          <div class="role-tags"><span class="role-tag role-surveyor">Surveyor</span></div>
-        </div>
-      </div>
-
-      <div class="endpoint">
-        <div class="endpoint-header">
-          <span class="method PATCH">PATCH</span>
-          <span class="endpoint-path">/aoi/:id/submit</span>
-          <span class="endpoint-name">Submit AOI (SUBMITTED)</span>
-        </div>
-        <div class="endpoint-body">
-          <div class="role-tags"><span class="role-tag role-surveyor">Surveyor</span></div>
-        </div>
-      </div>
-
-      <div class="endpoint">
-        <div class="endpoint-header">
-          <span class="method PATCH">PATCH</span>
-          <span class="endpoint-path">/aoi/:id/close</span>
-          <span class="endpoint-name">Close AOI</span>
-        </div>
-        <div class="endpoint-body">
-          <div class="role-tags"><span class="role-tag role-admin">Admin</span><span
-              class="role-tag role-manager">Manager</span></div>
-        </div>
+        <div class="note">priority: LOW | MEDIUM | HIGH</div>
       </div>
     </div>
 
-    <!-- ══ POI ══ -->
-    <div class="section">
-      <div class="section-header">
-        <span class="section-icon">📍</span>
-        <span class="section-title">POI MODULE</span>
-        <span class="section-subtitle">Point of Interest</span>
+    <div class="api-card">
+      <div class="api-header" onclick="toggle(this)">
+        <span class="badge GET">GET</span><span class="path">/aoi</span>
+        <span class="role">admin</span><span class="role">manager</span>
+        <span class="desc">Get all AOIs</span>
       </div>
-
-      <div class="endpoint">
-        <div class="endpoint-header">
-          <span class="method POST">POST</span>
-          <span class="endpoint-path">/poi</span>
-          <span class="endpoint-name">Create POI</span>
-        </div>
-        <div class="endpoint-body">
-          <div class="role-tags"><span class="role-tag role-surveyor">Surveyor</span></div>
-          <!-- <pre>{
-  "poi_name": "Sharma General Store",
-  "address": "Shop 12, Block A, Connaught Place, New Delhi",
-  "latitude": 28.6330,
-  "longitude": 77.2195,
-  "category": "General Store",
-  "aoi_id": "&lt;AOI_ID&gt;"
-}</pre> -->
-          <pre>
-  {
-    "aoi_id": "...",
-    "business_name": "Sharma Medical Store",
-    "latitude": 28.633,
-    "longitude": 77.2195
-  }
-</pre>
-        </div>
-      </div>
-
-      <div class="endpoint">
-        <div class="endpoint-header">
-          <span class="method PATCH">PATCH</span>
-          <span class="endpoint-path">/poi/:id</span>
-          <span class="endpoint-name">Update POI</span>
-        </div>
-        <div class="endpoint-body">
-          <div class="role-tags"><span class="role-tag role-surveyor">Surveyor</span></div>
-          <pre>{ "notes": "Closed on Sundays", "category": "Grocery" }</pre>
-        </div>
-      </div>
-
-      <div class="endpoint">
-        <div class="endpoint-header">
-          <span class="method GET">GET</span>
-          <span class="endpoint-path">/poi</span>
-          <span class="endpoint-name">List All POIs</span>
-        </div>
-        <div class="endpoint-body">
-          <div class="role-tags"><span class="role-tag role-admin">Admin</span><span
-              class="role-tag role-manager">Manager</span></div>
-        </div>
-      </div>
-
-      <div class="endpoint">
-        <div class="endpoint-header">
-          <span class="method GET">GET</span>
-          <span class="endpoint-path">/poi/assigned</span>
-          <span class="endpoint-name">View Assigned POIs</span>
-        </div>
-        <div class="endpoint-body">
-          <div class="role-tags"><span class="role-tag role-editor">Editor</span></div>
-        </div>
-      </div>
-
-      <div class="endpoint">
-        <div class="endpoint-header">
-          <span class="method PATCH">PATCH</span>
-          <span class="endpoint-path">/poi/:id/verify</span>
-          <span class="endpoint-name">Verify / Reject POI</span>
-        </div>
-        <div class="endpoint-body">
-          <div class="role-tags"><span class="role-tag role-admin">Admin</span><span
-              class="role-tag role-manager">Manager</span></div>
-          <div class="label">Verify</div>
-          <pre>{ "status": "VERIFIED" }</pre>
-          <div class="label" style="margin-top:8px">Reject</div>
-          <pre>{ "status": "REJECTED", "rejection_reason": "Incorrect coordinates" }</pre>
-        </div>
-      </div>
+      <div class="api-body"><div class="note">No body needed.</div></div>
     </div>
 
-    <!-- ══ PHOTOS ══ -->
-    <div class="section">
-      <div class="section-header">
-        <span class="section-icon">📸</span>
-        <span class="section-title">PHOTOS MODULE</span>
-        <span class="section-subtitle">Use Surveyor token to upload</span>
+    <div class="api-card">
+      <div class="api-header" onclick="toggle(this)">
+        <span class="badge GET">GET</span><span class="path">/aoi/assigned</span>
+        <span class="role">surveyor</span><span class="role">editor</span>
+        <span class="desc">Get AOIs assigned to me</span>
       </div>
+      <div class="api-body"><div class="note">JWT token determines which AOIs are returned.</div></div>
+    </div>
 
-      <div class="endpoint">
-        <div class="endpoint-header">
-          <span class="method POST">POST</span>
-          <span class="endpoint-path">/photos/upload</span>
-          <span class="endpoint-name">Upload Photo</span>
-        </div>
-        <div class="endpoint-body">
-          <div class="role-tags"><span class="role-tag role-surveyor">Surveyor</span></div>
-          <pre>{
-  "storage_path": "uploads/poi/shop_front_001.jpg",
-  "file_name": "shop_front_001.jpg",
-  "mime_type": "image/jpeg",
-  "size_bytes": 204800,
-  "poi_id": "&lt;POI_ID&gt;",
-  "aoi_id": "&lt;AOI_ID&gt;",
-  "photo_category": "STOREFRONT",
-  "latitude": 28.6330,
-  "longitude": 77.2195
+    <div class="api-card">
+      <div class="api-header" onclick="toggle(this)">
+        <span class="badge GET">GET</span><span class="path">/aoi/assigned/:id</span>
+        <span class="role">surveyor</span><span class="role">editor</span>
+        <span class="desc">Get one assigned AOI by ID</span>
+      </div>
+      <div class="api-body"><label>Params</label><pre>:id = AOI_UUID</pre></div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-header" onclick="toggle(this)">
+        <span class="badge PATCH">PATCH</span><span class="path">/aoi/:id/assign</span>
+        <span class="role">admin</span><span class="role">manager</span>
+        <span class="desc">Assign AOI to surveyor and/or editor</span>
+      </div>
+      <div class="api-body">
+        <label>Request Body (at least one required)</label>
+        <pre>{
+  "surveyor_id": "UUID-OF-SURVEYOR",
+  "editor_id": "UUID-OF-EDITOR"
 }</pre>
-        </div>
-      </div>
-
-      <div class="endpoint">
-        <div class="endpoint-header">
-          <span class="method GET">GET</span>
-          <span class="endpoint-path">/photos/my-uploads</span>
-          <span class="endpoint-name">View My Uploads</span>
-        </div>
-        <div class="endpoint-body">
-          <div class="role-tags"><span class="role-tag role-surveyor">Surveyor</span></div>
-        </div>
-      </div>
-
-      <div class="endpoint">
-        <div class="endpoint-header">
-          <span class="method GET">GET</span>
-          <span class="endpoint-path">/photos</span>
-          <span class="endpoint-name">View All Photos</span>
-        </div>
-        <div class="endpoint-body">
-          <div class="role-tags"><span class="role-tag role-admin">Admin</span><span
-              class="role-tag role-manager">Manager</span></div>
-          <div class="note">Optional query: <code>?status=PENDING</code></div>
-        </div>
-      </div>
-
-      <div class="endpoint">
-        <div class="endpoint-header">
-          <span class="method PATCH">PATCH</span>
-          <span class="endpoint-path">/photos/:id/assign</span>
-          <span class="endpoint-name">Assign Photo to Editor</span>
-        </div>
-        <div class="endpoint-body">
-          <div class="role-tags"><span class="role-tag role-admin">Admin</span><span
-              class="role-tag role-manager">Manager</span></div>
-          <pre>{ "editor_id": "&lt;EDITOR_USER_ID&gt;" }</pre>
-        </div>
-      </div>
-
-      <div class="endpoint">
-        <div class="endpoint-header">
-          <span class="method GET">GET</span>
-          <span class="endpoint-path">/photos/assigned</span>
-          <span class="endpoint-name">View Assigned Photos</span>
-        </div>
-        <div class="endpoint-body">
-          <div class="role-tags"><span class="role-tag role-editor">Editor</span></div>
-        </div>
-      </div>
-
-      <div class="endpoint">
-        <div class="endpoint-header">
-          <span class="method PATCH">PATCH</span>
-          <span class="endpoint-path">/photos/:id/status</span>
-          <span class="endpoint-name">Approve / Reject Photo</span>
-        </div>
-        <div class="endpoint-body">
-          <div class="role-tags"><span class="role-tag role-admin">Admin</span><span
-              class="role-tag role-manager">Manager</span></div>
-          <div class="label">Approve</div>
-          <pre>{ "status": "APPROVED" }</pre>
-          <div class="label" style="margin-top:8px">Reject</div>
-          <pre>{ "status": "REJECTED", "rejection_reason": "Blurry image, retake needed" }</pre>
-        </div>
-      </div>
-
-      <div class="endpoint">
-        <div class="endpoint-header">
-          <span class="method PATCH">PATCH</span>
-          <span class="endpoint-path">/photos/:id/resubmit</span>
-          <span class="endpoint-name">Resubmit Rejected Photo</span>
-        </div>
-        <div class="endpoint-body">
-          <div class="role-tags"><span class="role-tag role-surveyor">Surveyor</span></div>
-        </div>
-      </div>
-
-      <div class="endpoint">
-        <div class="endpoint-header">
-          <span class="method PATCH">PATCH</span>
-          <span class="endpoint-path">/photos/:id/request-reupload</span>
-          <span class="endpoint-name">Editor Request Re-upload</span>
-        </div>
-        <div class="endpoint-body">
-          <div class="role-tags"><span class="role-tag role-editor">Editor</span></div>
-          <pre>{ "reason": "Photo does not match POI location" }</pre>
-        </div>
       </div>
     </div>
 
-    <!-- ══ FORMS ══ -->
-    <div class="section">
-      <div class="section-header">
-        <span class="section-icon">📋</span>
-        <span class="section-title">FORMS MODULE</span>
-        <span class="section-subtitle">Use Editor token</span>
+    <div class="api-card">
+      <div class="api-header" onclick="toggle(this)">
+        <span class="badge PATCH">PATCH</span><span class="path">/aoi/bulk-assign</span>
+        <span class="role">admin</span><span class="role">manager</span>
+        <span class="desc">Bulk assign multiple AOIs</span>
       </div>
+      <div class="api-body">
+        <label>Request Body</label>
+        <pre>{
+  "aoi_ids": ["AOI_UUID_1", "AOI_UUID_2"],
+  "surveyor_id": "SURVEYOR_UUID"
+}</pre>
+      </div>
+    </div>
 
-      <div class="endpoint">
-        <div class="endpoint-header">
-          <span class="method POST">POST</span>
-          <span class="endpoint-path">/forms</span>
-          <span class="endpoint-name">Submit Form Data</span>
-        </div>
-        <div class="endpoint-body">
-          <div class="role-tags"><span class="role-tag role-editor">Editor</span></div>
-          <pre>{
-  "poi_id": "&lt;POI_ID&gt;",
+    <div class="api-card">
+      <div class="api-header" onclick="toggle(this)">
+        <span class="badge PATCH">PATCH</span><span class="path">/aoi/:id</span>
+        <span class="role">admin</span><span class="role">manager</span>
+        <span class="desc">Update AOI details</span>
+      </div>
+      <div class="api-body">
+        <label>Request Body (all optional)</label>
+        <pre>{
+  "aoi_name": "Updated Name",
+  "boundary_geojson": { "type": "Polygon", "coordinates": [...] },
+  "priority": "MEDIUM",
+  "deadline": "2025-12-31",
+  "notes": "Some notes"
+}</pre>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-header" onclick="toggle(this)">
+        <span class="badge PATCH">PATCH</span><span class="path">/aoi/:id/start</span>
+        <span class="role">surveyor</span>
+        <span class="desc">Start working on AOI → status: IN_PROGRESS</span>
+      </div>
+      <div class="api-body"><div class="note">No body. Status changes to IN_PROGRESS.</div></div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-header" onclick="toggle(this)">
+        <span class="badge PATCH">PATCH</span><span class="path">/aoi/:id/submit</span>
+        <span class="role">surveyor</span>
+        <span class="desc">Submit AOI → status: SUBMITTED</span>
+      </div>
+      <div class="api-body"><div class="note">No body. Status changes to SUBMITTED.</div></div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-header" onclick="toggle(this)">
+        <span class="badge PATCH">PATCH</span><span class="path">/aoi/:id/close</span>
+        <span class="role">admin</span><span class="role">manager</span>
+        <span class="desc">Close AOI → status: CLOSED</span>
+      </div>
+      <div class="api-body"><div class="note">No body. Status changes to CLOSED.</div></div>
+    </div>
+  </div>
+
+  <!-- ===== PHOTOS ===== -->
+  <div class="section" id="photos">
+    <div class="section-title">📷 Photos — /photos</div>
+
+    <div class="api-card">
+      <div class="api-header" onclick="toggle(this)">
+        <span class="badge POST">POST</span><span class="path">/photos/upload</span>
+        <span class="role">surveyor</span>
+        <span class="desc">Upload a photo to Supabase storage</span>
+      </div>
+      <div class="api-body">
+        <label>Request (multipart/form-data)</label>
+        <pre>file         = &lt;image file&gt;
+aoi_id       = UUID-OF-AOI
+photo_type   = STOREFRONT | SIGNBOARD | INTERIOR | PRODUCT | CONTACT_DETAILS
+latitude     = 28.6315   (optional)
+longitude    = 77.2167   (optional)</pre>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-header" onclick="toggle(this)">
+        <span class="badge GET">GET</span><span class="path">/photos/my-uploads</span>
+        <span class="role">surveyor</span>
+        <span class="desc">Get all my uploaded photos</span>
+      </div>
+      <div class="api-body"><div class="note">No body. Returns photos uploaded by logged-in surveyor.</div></div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-header" onclick="toggle(this)">
+        <span class="badge GET">GET</span><span class="path">/photos?status=SUBMITTED</span>
+        <span class="role">admin</span><span class="role">manager</span>
+        <span class="desc">Get all photos (optional status filter)</span>
+      </div>
+      <div class="api-body">
+        <label>Query Params</label>
+        <pre>status = SUBMITTED | APPROVED | REJECTED | RESUBMITTED | ARCHIVED  (optional)</pre>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-header" onclick="toggle(this)">
+        <span class="badge GET">GET</span><span class="path">/photos/assigned</span>
+        <span class="role">editor</span>
+        <span class="desc">Get photos assigned to me (editor)</span>
+      </div>
+      <div class="api-body"><div class="note">No body.</div></div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-header" onclick="toggle(this)">
+        <span class="badge GET">GET</span><span class="path">/photos/assigned/:id</span>
+        <span class="role">editor</span>
+        <span class="desc">Get one assigned photo by ID</span>
+      </div>
+      <div class="api-body"><label>Params</label><pre>:id = PHOTO_UUID</pre></div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-header" onclick="toggle(this)">
+        <span class="badge GET">GET</span><span class="path">/photos/aoi/:aoiId/editor/:editorId</span>
+        <span class="role">editor</span><span class="role">admin</span><span class="role">manager</span>
+        <span class="desc">Get photos by AOI and editor</span>
+      </div>
+      <div class="api-body">
+        <label>URL Params</label>
+        <pre>:aoiId    = AOI_UUID
+:editorId = EDITOR_UUID</pre>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-header" onclick="toggle(this)">
+        <span class="badge PATCH">PATCH</span><span class="path">/photos/:id/assign</span>
+        <span class="role">admin</span><span class="role">manager</span>
+        <span class="desc">Assign photo to an editor</span>
+      </div>
+      <div class="api-body">
+        <label>Request Body</label>
+        <pre>{ "editor_id": "EDITOR_UUID" }</pre>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-header" onclick="toggle(this)">
+        <span class="badge PATCH">PATCH</span><span class="path">/photos/:id/status</span>
+        <span class="role">admin</span><span class="role">manager</span>
+        <span class="desc">Approve or reject a photo</span>
+      </div>
+      <div class="api-body">
+        <label>Request Body</label>
+        <pre>{
+  "status": "APPROVED",
+  "rejection_reason": ""
+}
+// status: SUBMITTED | APPROVED | REJECTED | RESUBMITTED | ARCHIVED</pre>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-header" onclick="toggle(this)">
+        <span class="badge PATCH">PATCH</span><span class="path">/photos/:id/resubmit</span>
+        <span class="role">surveyor</span>
+        <span class="desc">Resubmit a rejected photo</span>
+      </div>
+      <div class="api-body"><div class="note">No body. Sets status to RESUBMITTED.</div></div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-header" onclick="toggle(this)">
+        <span class="badge PATCH">PATCH</span><span class="path">/photos/:id/request-reupload</span>
+        <span class="role">editor</span>
+        <span class="desc">Request surveyor to re-upload a photo</span>
+      </div>
+      <div class="api-body">
+        <label>Request Body</label>
+        <pre>{ "reason": "Image is blurry, please retake" }</pre>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-header" onclick="toggle(this)">
+        <span class="badge DELETE">DELETE</span><span class="path">/photos/:id</span>
+        <span class="role">surveyor</span><span class="role">admin</span>
+        <span class="desc">Delete a photo</span>
+      </div>
+      <div class="api-body"><label>Params</label><pre>:id = PHOTO_UUID</pre></div>
+    </div>
+  </div>
+
+  <!-- ===== FORMS ===== -->
+  <div class="section" id="forms">
+    <div class="section-title">📝 Forms — /forms</div>
+
+    <div class="api-card">
+      <div class="api-header" onclick="toggle(this)">
+        <span class="badge POST">POST</span><span class="path">/forms</span>
+        <span class="role">editor</span>
+        <span class="desc">Submit form data for a photo</span>
+      </div>
+      <div class="api-body">
+        <label>Request Body</label>
+        <pre>{
   "form_type": "BUSINESS_DETAILS",
   "form_data": {
     "business_name": "Sharma General Store",
     "owner_name": "Ramesh Sharma",
-    "categories": ["Grocery", "General Store"],
-    "timings": "9 AM - 9 PM",
-    "days_open": ["Mon","Tue","Wed","Thu","Fri","Sat"],
-    "phone": "9876543210",
-    "gst_number": "07AAAAA0000A1Z5"
+    "category": "Grocery",
+    "contact": "9876543210",
+    "timings": "9AM-10PM"
   },
-  "linked_photo_id": "&lt;PHOTO_ID&gt;"
+  "linked_photo_id": "PHOTO_UUID"
 }</pre>
-        </div>
-      </div>
-
-      <div class="endpoint">
-        <div class="endpoint-header">
-          <span class="method GET">GET</span>
-          <span class="endpoint-path">/forms</span>
-          <span class="endpoint-name">View All Forms</span>
-        </div>
-        <div class="endpoint-body">
-          <div class="role-tags"><span class="role-tag role-admin">Admin</span><span
-              class="role-tag role-manager">Manager</span></div>
-          <div class="note">Optional query: <code>?status=PENDING</code></div>
-        </div>
-      </div>
-
-      <div class="endpoint">
-        <div class="endpoint-header">
-          <span class="method PATCH">PATCH</span>
-          <span class="endpoint-path">/forms/:id/status</span>
-          <span class="endpoint-name">Approve / Reject Form</span>
-        </div>
-        <div class="endpoint-body">
-          <div class="role-tags"><span class="role-tag role-admin">Admin</span><span
-              class="role-tag role-manager">Manager</span></div>
-          <div class="label">Approve</div>
-          <pre>{ "status": "APPROVED" }</pre>
-          <div class="label" style="margin-top:8px">Reject</div>
-          <pre>{ "status": "REJECTED", "rejection_reason": "Missing GST number" }</pre>
-        </div>
+        <div class="note">form_type examples: BUSINESS_DETAILS | MENU_CARD | CONTACT_INFO</div>
       </div>
     </div>
 
-    <!-- ══ REWARDS ══ -->
-    <div class="section">
-      <div class="section-header">
-        <span class="section-icon">💰</span>
-        <span class="section-title">REWARDS MODULE</span>
-        <span class="section-subtitle">Rate: ₹10/photo · ₹50/POI</span>
+    <div class="api-card">
+      <div class="api-header" onclick="toggle(this)">
+        <span class="badge GET">GET</span><span class="path">/forms?status=SUBMITTED</span>
+        <span class="role">admin</span><span class="role">manager</span>
+        <span class="desc">Get all forms (optional status filter)</span>
       </div>
-
-      <div class="endpoint">
-        <div class="endpoint-header">
-          <span class="method POST">POST</span>
-          <span class="endpoint-path">/rewards/request</span>
-          <span class="endpoint-name">Request Payout</span>
-        </div>
-        <div class="endpoint-body">
-          <div class="role-tags"><span class="role-tag role-surveyor">Surveyor</span></div>
-          <pre>{
-  "aoi_id": "&lt;AOI_ID&gt;",
-  "total_photos_submitted": 25,
-  "total_photos_approved": 20,
-  "total_pois_created": 8,
-  "request_notes": "Completed Block A survey"
-}</pre>
-          <div class="note">💡 Auto-calculated: 20×₹10 + 8×₹50 = <strong>₹600</strong></div>
-        </div>
-      </div>
-
-      <div class="endpoint">
-        <div class="endpoint-header">
-          <span class="method GET">GET</span>
-          <span class="endpoint-path">/rewards/my-earnings</span>
-          <span class="endpoint-name">View My Earnings</span>
-        </div>
-        <div class="endpoint-body">
-          <div class="role-tags"><span class="role-tag role-surveyor">Surveyor</span></div>
-        </div>
-      </div>
-
-      <div class="endpoint">
-        <div class="endpoint-header">
-          <span class="method GET">GET</span>
-          <span class="endpoint-path">/rewards</span>
-          <span class="endpoint-name">All Reward Requests</span>
-        </div>
-        <div class="endpoint-body">
-          <div class="role-tags"><span class="role-tag role-admin">Admin</span><span
-              class="role-tag role-manager">Manager</span></div>
-          <div class="note">Optional query: <code>?status=PENDING</code></div>
-        </div>
-      </div>
-
-      <div class="endpoint">
-        <div class="endpoint-header">
-          <span class="method PATCH">PATCH</span>
-          <span class="endpoint-path">/rewards/:id/status</span>
-          <span class="endpoint-name">Approve / Reject / Pay</span>
-        </div>
-        <div class="endpoint-body">
-          <div class="role-tags"><span class="role-tag role-admin">Admin</span><span
-              class="role-tag role-manager">Manager</span></div>
-          <div class="label">Approve + Bonus</div>
-          <pre>{ "status": "APPROVED", "review_notes": "Good quality work", "bonus_amount": 100 }</pre>
-          <div class="label" style="margin-top:8px">Reject</div>
-          <pre>{ "status": "REJECTED", "review_notes": "Insufficient POI count" }</pre>
-          <div class="label" style="margin-top:8px">Mark as Paid</div>
-          <pre>{ "status": "PAID", "payment_method": "UPI", "payment_reference": "TXN2024021900001" }</pre>
-        </div>
-      </div>
-
-      <div class="endpoint">
-        <div class="endpoint-header">
-          <span class="method GET">GET</span>
-          <span class="endpoint-path">/rewards/stats</span>
-          <span class="endpoint-name">Dashboard Stats</span>
-        </div>
-        <div class="endpoint-body">
-          <div class="role-tags"><span class="role-tag role-admin">Admin</span></div>
-        </div>
+      <div class="api-body">
+        <label>Query Params</label>
+        <pre>status = SUBMITTED | APPROVED | REJECTED  (optional)</pre>
       </div>
     </div>
 
-    <!-- ══ SYSTEM ══ -->
-    <div class="section">
-      <div class="section-header">
-        <span class="section-icon">⚙️</span>
-        <span class="section-title">SYSTEM MODULE</span>
-        <span class="section-subtitle">Admin only</span>
+    <div class="api-card">
+      <div class="api-header" onclick="toggle(this)">
+        <span class="badge PATCH">PATCH</span><span class="path">/forms/:id/status</span>
+        <span class="role">admin</span><span class="role">manager</span>
+        <span class="desc">Approve or reject a form</span>
       </div>
-
-      <div class="endpoint">
-        <div class="endpoint-header">
-          <span class="method GET">GET</span>
-          <span class="endpoint-path">/system/logs</span>
-          <span class="endpoint-name">Activity Logs</span>
-        </div>
-        <div class="endpoint-body">
-          <div class="role-tags"><span class="role-tag role-admin">Admin</span></div>
-          <div class="note">Optional query: <code>?limit=20</code></div>
-        </div>
-      </div>
-
-      <div class="endpoint">
-        <div class="endpoint-header">
-          <span class="method GET">GET</span>
-          <span class="endpoint-path">/system/settings</span>
-          <span class="endpoint-name">View Settings</span>
-        </div>
-        <div class="endpoint-body">
-          <div class="role-tags"><span class="role-tag role-admin">Admin</span></div>
-        </div>
-      </div>
-
-      <div class="endpoint">
-        <div class="endpoint-header">
-          <span class="method PATCH">PATCH</span>
-          <span class="endpoint-path">/system/settings</span>
-          <span class="endpoint-name">Update Setting</span>
-        </div>
-        <div class="endpoint-body">
-          <div class="role-tags"><span class="role-tag role-admin">Admin</span></div>
-          <pre>{ "key": "REWARD_PER_PHOTO", "value": "15", "description": "Reward per approved photo (₹)" }</pre>
-        </div>
+      <div class="api-body">
+        <label>Request Body</label>
+        <pre>{
+  "status": "APPROVED",
+  "rejection_reason": ""
+}
+// status: APPROVED | REJECTED</pre>
       </div>
     </div>
-
-    <!-- ══ REFERENCE TABLES ══ -->
-    <div class="section">
-      <div class="section-header">
-        <span class="section-icon">📊</span>
-        <span class="section-title">REFERENCE TABLES</span>
-      </div>
-
-      <div style="margin-bottom:16px">
-        <h4 style="color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">🔑
-          Token Reference</h4>
-        <div class="table-wrap">
-          <table>
-            <tr>
-              <th>Role</th>
-              <th>Email</th>
-              <th>Password</th>
-              <th>Use For</th>
-            </tr>
-            <tr>
-              <td><span class="role-tag role-admin">admin</span></td>
-              <td>admin@pixpe.com</td>
-              <td>Admin@123</td>
-              <td>All admin routes</td>
-            </tr>
-            <tr>
-              <td><span class="role-tag role-manager">manager</span></td>
-              <td>manager@pixpe.com</td>
-              <td>Manager@123</td>
-              <td>Assign, approve, reject</td>
-            </tr>
-            <tr>
-              <td><span class="role-tag role-editor">editor</span></td>
-              <td>editor@pixpe.com</td>
-              <td>Editor@123</td>
-              <td>Review photos, submit forms</td>
-            </tr>
-            <tr>
-              <td><span class="role-tag role-surveyor">surveyor</span></td>
-              <td>surveyor@pixpe.com</td>
-              <td>Surveyor@123</td>
-              <td>Upload, create POI, payout</td>
-            </tr>
-          </table>
-        </div>
-      </div>
-
-      <h4 style="color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">🔄
-        Status Flows</h4>
-      <div class="status-flows">
-        <div class="status-flow">
-          <h4>AOI Status</h4>
-          <div class="flow-chain">
-            <span class="status-pill s-draft">DRAFT</span><span class="arr">→</span>
-            <span class="status-pill s-assigned">ASSIGNED</span><span class="arr">→</span>
-            <span class="status-pill s-active">IN_PROGRESS</span><span class="arr">→</span>
-            <span class="status-pill s-assigned">SUBMITTED</span><span class="arr">→</span>
-            <span class="status-pill s-success">CLOSED</span>
-          </div>
-        </div>
-        <div class="status-flow">
-          <h4>Photo Status</h4>
-          <div class="flow-chain">
-            <span class="status-pill s-draft">PENDING</span><span class="arr">→</span>
-            <span class="status-pill s-assigned">ASSIGNED</span><span class="arr">→</span>
-            <span class="status-pill s-success">APPROVED</span>/<span class="status-pill s-danger">REJECTED</span><span
-              class="arr">→</span>
-            <span class="status-pill s-active">RESUBMITTED</span>
-          </div>
-        </div>
-        <div class="status-flow">
-          <h4>Reward Status</h4>
-          <div class="flow-chain">
-            <span class="status-pill s-draft">PENDING</span><span class="arr">→</span>
-            <span class="status-pill s-success">APPROVED</span><span class="arr">→</span>
-            <span class="status-pill s-active">PAID</span>
-            &nbsp;|&nbsp;
-            <span class="status-pill s-danger">REJECTED</span>
-          </div>
-        </div>
-        <div class="status-flow">
-          <h4>KYC Status</h4>
-          <div class="flow-chain">
-            <span class="status-pill s-draft">PENDING</span><span class="arr">→</span>
-            <span class="status-pill s-assigned">SUBMITTED</span><span class="arr">→</span>
-            <span class="status-pill s-success">APPROVED</span>/<span class="status-pill s-danger">REJECTED</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div
-      style="text-align:center;color:var(--muted);font-size:11px;margin-top:24px;padding-top:16px;border-top:1px solid var(--border)">
-      Pixpe Backend API Test Guide — Generated 2026 · Total Endpoints: 53
-    </div>
-
   </div>
-</body>
 
+  <!-- ===== AI ===== -->
+  <div class="section" id="ai">
+    <div class="section-title">🤖 AI — /ai</div>
+
+    <div class="api-card">
+      <div class="api-header" onclick="toggle(this)">
+        <span class="badge POST">POST</span><span class="path">/ai/analyze-image</span>
+        <span class="desc">Analyze image using Gemini AI (file or URL)</span>
+      </div>
+      <div class="api-body">
+        <label>Option 1 – File Upload (multipart/form-data)</label>
+        <pre>image = &lt;image file&gt;</pre>
+        <label>Option 2 – URL (JSON)</label>
+        <pre>{ "image_url": "https://example.com/photo.jpg" }</pre>
+        <div class="note">Both JWT-protected. Use one method per request.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== REWARDS ===== -->
+  <div class="section" id="rewards">
+    <div class="section-title">💰 Rewards — /rewards</div>
+
+    <div class="api-card">
+      <div class="api-header" onclick="toggle(this)">
+        <span class="badge POST">POST</span><span class="path">/rewards/request</span>
+        <span class="role">surveyor</span>
+        <span class="desc">Create a payout / reward request</span>
+      </div>
+      <div class="api-body">
+        <label>Request Body</label>
+        <pre>{
+  "aoi_id": "AOI_UUID",
+  "total_photos_submitted": 50,
+  "total_photos_approved": 45,
+  "request_notes": "Completed Connaught Place zone"
+}</pre>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-header" onclick="toggle(this)">
+        <span class="badge GET">GET</span><span class="path">/rewards/my-earnings</span>
+        <span class="role">surveyor</span>
+        <span class="desc">Get my earnings history</span>
+      </div>
+      <div class="api-body"><div class="note">No body. JWT identifies surveyor.</div></div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-header" onclick="toggle(this)">
+        <span class="badge GET">GET</span><span class="path">/rewards?status=PENDING</span>
+        <span class="role">admin</span><span class="role">manager</span>
+        <span class="desc">Get all reward requests</span>
+      </div>
+      <div class="api-body">
+        <label>Query Params</label>
+        <pre>status = PENDING | APPROVED | REJECTED | PAID  (optional)</pre>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-header" onclick="toggle(this)">
+        <span class="badge PATCH">PATCH</span><span class="path">/rewards/:id/status</span>
+        <span class="role">admin</span><span class="role">manager</span>
+        <span class="desc">Approve, reject, or mark as paid</span>
+      </div>
+      <div class="api-body">
+        <label>Request Body</label>
+        <pre>{
+  "status": "APPROVED",
+  "review_notes": "Good work!",
+  "payment_method": "UPI",
+  "payment_reference": "TXN123456",
+  "bonus_amount": 100
+}
+// status: APPROVED | REJECTED | PAID</pre>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-header" onclick="toggle(this)">
+        <span class="badge GET">GET</span><span class="path">/rewards/stats</span>
+        <span class="role">admin</span>
+        <span class="desc">Get platform-wide stats</span>
+      </div>
+      <div class="api-body"><div class="note">No body. Returns aggregate statistics.</div></div>
+    </div>
+  </div>
+
+  <!-- ===== SYSTEM ===== -->
+  <div class="section" id="system">
+    <div class="section-title">⚙️ System — /system</div>
+
+    <div class="api-card">
+      <div class="api-header" onclick="toggle(this)">
+        <span class="badge GET">GET</span><span class="path">/system/logs?limit=50</span>
+        <span class="role">admin</span>
+        <span class="desc">View audit logs</span>
+      </div>
+      <div class="api-body">
+        <label>Query Params</label>
+        <pre>limit = 50  (number of log entries)</pre>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-header" onclick="toggle(this)">
+        <span class="badge GET">GET</span><span class="path">/system/settings</span>
+        <span class="role">admin</span>
+        <span class="desc">View all system settings</span>
+      </div>
+      <div class="api-body"><div class="note">No body.</div></div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-header" onclick="toggle(this)">
+        <span class="badge PATCH">PATCH</span><span class="path">/system/settings</span>
+        <span class="role">admin</span>
+        <span class="desc">Update a system setting</span>
+      </div>
+      <div class="api-body">
+        <label>Request Body</label>
+        <pre>{
+  "key": "reward_per_photo",
+  "value": "5",
+  "description": "Reward in INR per approved photo"
+}</pre>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function toggle(header){
+  const card = header.parentElement;
+  card.classList.toggle('open');
+}
+// Auto-open first card in each section on load
+document.querySelectorAll('.section').forEach(s=>{
+  const first = s.querySelector('.api-card');
+  if(first) first.classList.add('open');
+});
+</script>
+</body>
 </html>

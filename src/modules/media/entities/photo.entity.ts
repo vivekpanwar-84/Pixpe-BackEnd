@@ -1,18 +1,10 @@
 import { Entity, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { BaseEntity } from '../../../common/entities/base.entity';
-import { PoiPoint } from '../../locations/entities/poi-point.entity';
 import { AoiArea } from '../../locations/entities/aoi-area.entity';
 import { User } from '../../users/entities/user.entity';
 
 @Entity('photos')
 export class Photo extends BaseEntity {
-    @Column({ type: 'uuid' })
-    poi_id: string;
-
-    @ManyToOne(() => PoiPoint)
-    @JoinColumn({ name: 'poi_id' })
-    poi: PoiPoint;
-
     @Column({ type: 'uuid' })
     aoi_id: string;
 

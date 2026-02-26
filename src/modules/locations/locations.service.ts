@@ -1,19 +1,19 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AoiArea } from './entities/aoi-area.entity';
-import { PoiPoint } from './entities/poi-point.entity';
-import { CreateAoiDto, UpdateAoiDto } from './dto/aoi.dto';
-import { CreatePoiDto, UpdatePoiDto, VerifyPoiDto } from './dto/poi.dto';
-import { RoleSlug } from '../../common/constants/roles.enum';
+import { Photo } from '../media/entities/photo.entity';
+import { CreateAoiDto, UpdateAoiDto, AssignAoiDto, BulkAssignAoiDto } from './dto/aoi.dto';
 
 @Injectable()
 export class LocationsService {
+    private readonly logger = new Logger(LocationsService.name);
+
     constructor(
         @InjectRepository(AoiArea)
         private aoiRepository: Repository<AoiArea>,
-        @InjectRepository(PoiPoint)
-        private poiRepository: Repository<PoiPoint>,
+        @InjectRepository(Photo)
+        private photoRepository: Repository<Photo>,
     ) { }
 
     // --- AOI Operations ---
@@ -33,14 +33,15 @@ export class LocationsService {
     }
 
     async findAllAoi(role?: string, userId?: string): Promise<AoiArea[]> {
-        // Admin/Manager/Editor see all? Or assigned?
-        // Let's implement basic filtering
         const query = this.aoiRepository.createQueryBuilder('aoi')
-            .leftJoinAndSelect('aoi.assigned_to', 'assigned_to')
+            .leftJoinAndSelect('aoi.assigned_to_surveyor', 'assigned_to_surveyor')
+            .leftJoinAndSelect('aoi.assigned_to_editor', 'assigned_to_editor')
             .leftJoinAndSelect('aoi.created_by', 'created_by');
 
-        if (role === 'surveyor' || role === 'editor') {
-            if (userId) query.where('aoi.assigned_to_id = :userId', { userId });
+        if (role === 'surveyor') {
+            if (userId) query.where('aoi.assigned_to_surveyor_id = :userId', { userId });
+        } else if (role === 'editor') {
+            if (userId) query.where('aoi.assigned_to_editor_id = :userId', { userId });
         }
 
         return query.getMany();
@@ -49,16 +50,23 @@ export class LocationsService {
     async findOneAoi(id: string): Promise<AoiArea> {
         const aoi = await this.aoiRepository.findOne({
             where: { id },
-            relations: ['assigned_to', 'created_by']
+            relations: ['assigned_to_surveyor', 'assigned_to_editor', 'created_by']
         });
         if (!aoi) throw new NotFoundException(`AOI #${id} not found`);
         return aoi;
     }
 
-    async findOneAssignedAoi(id: string, userId: string): Promise<AoiArea> {
+    async findOneAssignedAoi(id: string, userId: string, role: string): Promise<AoiArea> {
+        const where: any = { id };
+        if (role === 'surveyor') {
+            where.assigned_to_surveyor_id = userId;
+        } else if (role === 'editor') {
+            where.assigned_to_editor_id = userId;
+        }
+
         const aoi = await this.aoiRepository.findOne({
-            where: { id, assigned_to_id: userId },
-            relations: ['assigned_to', 'created_by']
+            where,
+            relations: ['assigned_to_surveyor', 'assigned_to_editor', 'created_by']
         });
         if (!aoi) throw new NotFoundException(`Assigned AOI #${id} not found or not assigned to you`);
         return aoi;
@@ -70,18 +78,73 @@ export class LocationsService {
         return this.aoiRepository.save(aoi);
     }
 
-    async assignAoi(id: string, assigneeId: string, assignedBy: string): Promise<AoiArea> {
+    async assignAoi(id: string, assignDto: AssignAoiDto, assignedBy: string): Promise<AoiArea> {
         const aoi = await this.findOneAoi(id);
-        aoi.assigned_to_id = assigneeId;
-        aoi.assigned_by_id = assignedBy;
-        aoi.assigned_at = new Date();
-        aoi.status = 'ASSIGNED';
+
+        if (assignDto.surveyor_id) {
+            aoi.assigned_to_surveyor_id = assignDto.surveyor_id;
+            aoi.assigned_by_surveyor_id = assignedBy;
+            aoi.assigned_at_surveyor = new Date();
+            aoi.status = 'ASSIGNED';
+        }
+
+        if (assignDto.editor_id) {
+            aoi.assigned_to_editor_id = assignDto.editor_id;
+            aoi.assigned_by_editor_id = assignedBy;
+            aoi.assigned_at_editor = new Date();
+
+            // Cascade assignment to all photos in the AOI
+            this.logger.log(`Cascading assignment for AOI ${id} to editor ${assignDto.editor_id}`);
+            await this.photoRepository.update(
+                { aoi_id: id },
+                {
+                    assigned_to_id: assignDto.editor_id,
+                    assigned_by_id: assignedBy,
+                    assigned_at: new Date(),
+                    status: 'ASSIGNED'
+                }
+            );
+        }
+
         return this.aoiRepository.save(aoi);
+    }
+
+    async bulkAssignAoi(bulkDto: BulkAssignAoiDto, assignedBy: string): Promise<void> {
+        const { aoi_ids, surveyor_id, editor_id } = bulkDto;
+
+        for (const id of aoi_ids) {
+            const aoi = await this.findOneAoi(id);
+
+            if (surveyor_id) {
+                aoi.assigned_to_surveyor_id = surveyor_id;
+                aoi.assigned_by_surveyor_id = assignedBy;
+                aoi.assigned_at_surveyor = new Date();
+                aoi.status = 'ASSIGNED';
+            }
+
+            if (editor_id) {
+                aoi.assigned_to_editor_id = editor_id;
+                aoi.assigned_by_editor_id = assignedBy;
+                aoi.assigned_at_editor = new Date();
+
+                // Cascade assignment to all photos in the AOI
+                await this.photoRepository.update(
+                    { aoi_id: id },
+                    {
+                        assigned_to_id: editor_id,
+                        assigned_by_id: assignedBy,
+                        assigned_at: new Date(),
+                        status: 'ASSIGNED'
+                    }
+                );
+            }
+
+            await this.aoiRepository.save(aoi);
+        }
     }
 
     async updateAoiStatus(id: string, status: string, userId: string): Promise<AoiArea> {
         const aoi = await this.findOneAoi(id);
-        // Check ownership if surveyor?
         aoi.status = status;
         if (status === 'SUBMITTED') aoi.submitted_at = new Date();
         if (status === 'CLOSED') {
@@ -89,76 +152,5 @@ export class LocationsService {
             aoi.closed_by_id = userId;
         }
         return this.aoiRepository.save(aoi);
-    }
-
-    // --- POI Operations ---
-
-    async createPoi(createPoiDto: CreatePoiDto, createdBy: string): Promise<PoiPoint> {
-        const poi = this.poiRepository.create({
-            ...createPoiDto,
-            created_by_id: createdBy,
-            status: 'PENDING', // Pending verification
-        });
-        return this.poiRepository.save(poi);
-    }
-
-    async findAllPoi(role?: string, userId?: string, aoiId?: string, assignedToAoi?: boolean): Promise<PoiPoint[]> {
-        const query = this.poiRepository.createQueryBuilder('poi')
-            .leftJoinAndSelect('poi.created_by', 'created_by')
-            .leftJoinAndSelect('poi.assigned_to', 'assigned_to')
-            .leftJoinAndSelect('poi.aoi', 'aoi');
-
-        if (role === 'surveyor') {
-            query.andWhere('poi.created_by_id = :userId', { userId });
-        } else if (role === 'editor') {
-            query.andWhere('poi.assigned_to_id = :userId', { userId });
-        }
-
-        if (aoiId) {
-            query.andWhere('poi.aoi_id = :aoiId', { aoiId });
-        }
-
-        return query.getMany();
-    }
-
-    async findOnePoi(id: string): Promise<PoiPoint> {
-        const poi = await this.poiRepository.findOne({
-            where: { id },
-            relations: ['created_by', 'assigned_to', 'aoi']
-        });
-        if (!poi) throw new NotFoundException(`POI #${id} not found`);
-        return poi;
-    }
-
-    async updatePoi(id: string, updatePoiDto: UpdatePoiDto, userId: string): Promise<PoiPoint> {
-        const poi = await this.findOnePoi(id);
-        // Ensure only creator can update logic if needed
-        // if (poi.created_by_id !== userId) throw new UnauthorizedException();
-
-        Object.assign(poi, updatePoiDto);
-        return this.poiRepository.save(poi);
-    }
-
-    async assignPoi(id: string, editorId: string, assignedBy: string): Promise<PoiPoint> {
-        const poi = await this.findOnePoi(id);
-        poi.assigned_to_id = editorId;
-        poi.assigned_by_id = assignedBy;
-        poi.assigned_at = new Date();
-        // optionally update status if needed, e.g. poi.status = 'ASSIGNED';
-        return this.poiRepository.save(poi);
-    }
-
-    async verifyPoi(id: string, verifyDto: VerifyPoiDto, verifiedBy: string): Promise<PoiPoint> {
-        const poi = await this.poiRepository.findOne({ where: { id } });
-        if (!poi) throw new NotFoundException('POI not found');
-
-        poi.status = verifyDto.status;
-        if (verifyDto.status === 'REJECTED') {
-            poi.rejection_reason = verifyDto.rejection_reason || '';
-        } else {
-            poi.verified_at = new Date();
-            poi.verified_by_id = verifiedBy;
-        }
-        return this.poiRepository.save(poi);
     }
 }

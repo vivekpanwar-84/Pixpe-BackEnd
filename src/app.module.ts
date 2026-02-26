@@ -10,6 +10,7 @@ import { LocationsModule } from './modules/locations/locations.module';
 import { MediaModule } from './modules/media/media.module';
 import { WorkflowModule } from './modules/workflow/workflow.module';
 import { SystemModule } from './modules/system/system.module';
+import { AiModule } from './modules/ai/ai.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { SystemModule } from './modules/system/system.module';
     MediaModule,
     WorkflowModule,
     SystemModule,
+    AiModule,
   ],
   controllers: [AppController],
   providers: [AppService],

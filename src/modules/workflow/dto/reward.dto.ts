@@ -13,10 +13,6 @@ export class CreateRewardRequestDto {
     @IsNotEmpty()
     total_photos_approved: number;
 
-    @IsNumber()
-    @IsNotEmpty()
-    total_pois_created: number;
-
     @IsString()
     @IsOptional()
     request_notes?: string;

@@ -1,9 +1,6 @@
 import { IsString, IsNotEmpty, IsOptional, IsUUID, IsObject, IsEnum } from 'class-validator';
 
 export class CreateFormDto {
-    @IsUUID()
-    @IsNotEmpty()
-    poi_id: string;
 
     @IsString()
     @IsNotEmpty()

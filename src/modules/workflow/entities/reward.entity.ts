@@ -25,17 +25,11 @@ export class Reward extends BaseEntity {
     @Column({ type: 'int', default: 0 })
     total_photos_approved: number;
 
-    @Column({ type: 'int', default: 0 })
-    total_pois_created: number;
-
     @Column({ type: 'decimal', precision: 10, scale: 2 })
     reward_amount: number;
 
     @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
     reward_per_photo: number;
-
-    @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
-    reward_per_poi: number;
 
     @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
     bonus_amount: number;

@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, Req, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { LocationsService } from './locations.service';
-import { CreateAoiDto, UpdateAoiDto, AssignAoiDto } from './dto/aoi.dto';
+import { CreateAoiDto, UpdateAoiDto, AssignAoiDto, BulkAssignAoiDto } from './dto/aoi.dto';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { RoleSlug } from '../../common/constants/roles.enum';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -37,16 +37,29 @@ export class AoiController {
     @Get('assigned/:id')
     @Roles(RoleSlug.SURVEYOR, RoleSlug.EDITOR)
     findOneAssigned(@Param('id') id: string, @Req() req: any) {
-        return this.locationsService.findOneAssignedAoi(id, req.user.userId);
+        return this.locationsService.findOneAssignedAoi(id, req.user.userId, req.user.role);
     }
 
     // --- Verified: Assign AOI ---
     @Patch(':id/assign')
     @Roles(RoleSlug.ADMIN, RoleSlug.MANAGER)
     assign(@Param('id') id: string, @Body() assignDto: AssignAoiDto, @Req() req: any) {
-        const assigneeId = assignDto.surveyor_id || assignDto.editor_id;
-        if (!assigneeId) throw new BadRequestException('surveyor_id or editor_id must be provided');
-        return this.locationsService.assignAoi(id, assigneeId, req.user.userId);
+        if (!assignDto.surveyor_id && !assignDto.editor_id) {
+            throw new BadRequestException('surveyor_id or editor_id must be provided');
+        }
+        return this.locationsService.assignAoi(id, assignDto, req.user.userId);
+    }
+
+    @Patch('bulk-assign')
+    @Roles(RoleSlug.ADMIN, RoleSlug.MANAGER)
+    bulkAssign(@Body() bulkDto: BulkAssignAoiDto, @Req() req: any) {
+        if (!bulkDto.aoi_ids || bulkDto.aoi_ids.length === 0) {
+            throw new BadRequestException('aoi_ids must be provided');
+        }
+        if (!bulkDto.surveyor_id && !bulkDto.editor_id) {
+            throw new BadRequestException('surveyor_id or editor_id must be provided');
+        }
+        return this.locationsService.bulkAssignAoi(bulkDto, req.user.userId);
     }
 
     // --- Verified: Update AOI Details ---

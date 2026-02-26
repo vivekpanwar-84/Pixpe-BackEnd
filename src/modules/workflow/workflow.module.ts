@@ -6,7 +6,7 @@ import { WorkflowService } from './workflow.service';
 import { RewardsController } from './rewards.controller';
 
 @Module({
-    imports: [TypeOrmModule.forFeature([PoiForm, Reward])],
+    imports: [TypeOrmModule.forFeature([Reward])],
     controllers: [RewardsController],
     providers: [WorkflowService],
     exports: [WorkflowService, TypeOrmModule],
