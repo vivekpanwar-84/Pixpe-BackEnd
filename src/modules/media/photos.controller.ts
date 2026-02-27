@@ -31,8 +31,8 @@ export class PhotosController {
     // --- Surveyor: View My Uploads ---
     @Get('my-uploads')
     @Roles(RoleSlug.SURVEYOR)
-    findMyUploads(@Req() req: any) {
-        return this.mediaService.findMyPhotos(req.user.userId);
+    findMyUploads(@Req() req: any, @Query('aoi_id') aoi_id?: string) {
+        return this.mediaService.findMyPhotos(req.user.userId, aoi_id);
     }
 
     // --- Editor: View Assigned Photos ---
@@ -60,8 +60,8 @@ export class PhotosController {
     // --- Admin/Manager: View All Photos ---
     @Get()
     @Roles(RoleSlug.ADMIN, RoleSlug.MANAGER)
-    findAll(@Query('status') status?: string) {
-        return this.mediaService.findAllPhotos(status);
+    findAll(@Query('status') status?: string, @Query('aoi_id') aoi_id?: string) {
+        return this.mediaService.findAllPhotos(status, aoi_id);
     }
 
     // --- Manager: Assign Photo to Editor ---

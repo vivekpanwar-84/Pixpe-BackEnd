@@ -89,4 +89,10 @@ export class AoiController {
     close(@Param('id') id: string, @Req() req: any) {
         return this.locationsService.updateAoiStatus(id, 'CLOSED', req.user.userId);
     }
+
+    @Get(':id/stats')
+    @Roles(RoleSlug.ADMIN, RoleSlug.MANAGER, RoleSlug.EDITOR)
+    getStats(@Param('id') id: string) {
+        return this.locationsService.getAoiPhotoStats(id);
+    }
 }

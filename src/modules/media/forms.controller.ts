@@ -21,8 +21,12 @@ export class FormsController {
     // --- Verified: Manager View All Forms ---
     @Get()
     @Roles(RoleSlug.MANAGER, RoleSlug.ADMIN)
-    findAll(@Query('status') status?: string) {
-        return this.mediaService.findAllForms(status);
+    findAll(
+        @Query('status') status?: string,
+        @Query('photo_id') photo_id?: string,
+        @Query('aoi_id') aoi_id?: string
+    ) {
+        return this.mediaService.findAllForms(status, photo_id, aoi_id);
     }
 
     // --- Verified: Manager Approve/Reject Form ---

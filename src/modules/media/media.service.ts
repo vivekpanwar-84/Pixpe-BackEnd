@@ -94,8 +94,10 @@ export class MediaService {
         return photo;
     }
 
-    async findMyPhotos(userId: string): Promise<Photo[]> {
-        return this.photoRepository.find({ where: { uploaded_by_id: userId } });
+    async findMyPhotos(userId: string, aoiId?: string): Promise<Photo[]> {
+        const where: any = { uploaded_by_id: userId };
+        if (aoiId) where.aoi_id = aoiId;
+        return this.photoRepository.find({ where, order: { created_at: 'DESC' } });
     }
 
     async findAssignedPhotos(userId: string): Promise<Photo[]> {
@@ -108,15 +110,17 @@ export class MediaService {
     async findOneAssignedPhoto(id: string, userId: string): Promise<Photo> {
         const photo = await this.photoRepository.findOne({
             where: { id, assigned_to_id: userId },
-            relations: ['uploaded_by', 'aoi'],
+            relations: ['uploaded_by', 'aoi', 'form'],
         });
         if (!photo) throw new NotFoundException('Assigned photo not found');
         return photo;
     }
 
-    async findAllPhotos(status?: string): Promise<Photo[]> {
-        const where = status ? { status } : {};
-        return this.photoRepository.find({ where, relations: ['uploaded_by'] });
+    async findAllPhotos(status?: string, aoiId?: string): Promise<Photo[]> {
+        const where: any = {};
+        if (status) where.status = status;
+        if (aoiId) where.aoi_id = aoiId;
+        return this.photoRepository.find({ where, relations: ['uploaded_by', 'form'], order: { created_at: 'DESC' } });
     }
 
     async assignPhoto(id: string, editorId: string, userId: string): Promise<Photo> {
@@ -153,7 +157,7 @@ export class MediaService {
                 aoi_id: aoiId,
                 assigned_to_id: editorId,
             },
-            relations: ['uploaded_by', 'aoi'],
+            relations: ['uploaded_by', 'aoi', 'form'],
             order: { created_at: 'DESC' },
         });
     }
@@ -180,27 +184,54 @@ export class MediaService {
 
     async createForm(createFormDto: CreateFormDto, userId: string): Promise<PoiForm> {
         let aoiId = null;
+        let photo = null;
+
         if (createFormDto.linked_photo_id) {
-            const photo = await this.photoRepository.findOne({ where: { id: createFormDto.linked_photo_id } });
+            photo = await this.photoRepository.findOne({ where: { id: createFormDto.linked_photo_id } });
             if (photo) {
                 aoiId = photo.aoi_id;
             }
         }
 
-        const form = this.formRepository.create({
-            form_data: createFormDto.form_data,
-            photo_id: createFormDto.linked_photo_id,
-            aoi_id: aoiId ?? undefined,
-            submitted_by_id: userId,
-            review_status: 'PENDING',
-        } as any);
+        // Check if a form already exists for this photo (Upsert logic)
+        let form = await this.formRepository.findOne({ where: { photo_id: createFormDto.linked_photo_id } });
 
-        return this.formRepository.save(form as unknown as PoiForm);
+        if (form) {
+            form.form_data = createFormDto.form_data;
+            form.aoi_id = aoiId ?? form.aoi_id;
+            form.submitted_by_id = userId;
+            form.review_status = 'PENDING';
+            this.logger.log(`[FORM] Updating existing form ${form.id} for photo ${createFormDto.linked_photo_id}`);
+        } else {
+            form = this.formRepository.create({
+                form_data: createFormDto.form_data,
+                photo_id: createFormDto.linked_photo_id,
+                aoi_id: aoiId ?? undefined,
+                submitted_by_id: userId,
+                review_status: 'PENDING',
+            });
+            this.logger.log(`[FORM] Creating new form for photo ${createFormDto.linked_photo_id}`);
+        }
+
+        const savedForm = await this.formRepository.save(form);
+
+        // Update photo status and link form
+        if (photo) {
+            await this.photoRepository.update(photo.id, {
+                form_id: savedForm.id,
+                status: 'APPROVED'
+            });
+            this.logger.log(`[FORM] Linked form ${savedForm.id} to photo ${photo.id} and set status to APPROVED`);
+        }
+
+        return savedForm;
     }
-
-    async findAllForms(status?: string): Promise<PoiForm[]> {
-        const where = status ? { review_status: status } : {};
-        return this.formRepository.find({ where, relations: ['submitted_by'] });
+    async findAllForms(status?: string, photoId?: string, aoiId?: string): Promise<PoiForm[]> {
+        const where: any = {};
+        if (status) where.review_status = status;
+        if (photoId) where.photo_id = photoId;
+        if (aoiId) where.aoi_id = aoiId;
+        return this.formRepository.find({ where, relations: ['submitted_by'], order: { created_at: 'DESC' } });
     }
 
     async updateFormStatus(id: string, updateDto: UpdateFormStatusDto, userId: string): Promise<PoiForm> {

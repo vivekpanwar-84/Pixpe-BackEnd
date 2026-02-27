@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Not, IsNull } from 'typeorm';
 import { AoiArea } from './entities/aoi-area.entity';
 import { Photo } from '../media/entities/photo.entity';
 import { CreateAoiDto, UpdateAoiDto, AssignAoiDto, BulkAssignAoiDto } from './dto/aoi.dto';
@@ -141,6 +141,35 @@ export class LocationsService {
 
             await this.aoiRepository.save(aoi);
         }
+    }
+
+    async getAoiPhotoStats(id: string) {
+        const totalPhotos = await this.photoRepository.count({
+            where: { aoi_id: id }
+        });
+
+        const rejectedPhotos = await this.photoRepository.count({
+            where: { aoi_id: id, status: 'REJECTED' }
+        });
+
+        const reviewedPhotos = await this.photoRepository.count({
+            where: { aoi_id: id, form_id: Not(IsNull()) }
+        });
+
+        const pendingPhotos = await this.photoRepository.count({
+            where: {
+                aoi_id: id,
+                form_id: IsNull(),
+                status: Not('REJECTED')
+            }
+        });
+
+        return {
+            totalPhotos,
+            rejectedPhotos,
+            reviewedPhotos,
+            pendingPhotos
+        };
     }
 
     async updateAoiStatus(id: string, status: string, userId: string): Promise<AoiArea> {

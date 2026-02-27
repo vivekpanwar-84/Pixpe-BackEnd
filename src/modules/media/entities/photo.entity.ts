@@ -1,7 +1,8 @@
-import { Entity, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, Column, ManyToOne, JoinColumn, OneToOne } from 'typeorm';
 import { BaseEntity } from '../../../common/entities/base.entity';
 import { AoiArea } from '../../locations/entities/aoi-area.entity';
 import { User } from '../../users/entities/user.entity';
+import { PoiForm } from '../../workflow/entities/poi-form.entity';
 
 @Entity('photos')
 export class Photo extends BaseEntity {
@@ -83,6 +84,9 @@ export class Photo extends BaseEntity {
     // --- Linkage ---
     @Column({ type: 'uuid', nullable: true })
     form_id: string;
+
+    @OneToOne(() => PoiForm, (form) => form.photo)
+    form: PoiForm;
 
     // --- Rejection ---
     @Column({ type: 'timestamptz', nullable: true })
