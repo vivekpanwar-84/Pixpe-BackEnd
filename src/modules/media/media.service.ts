@@ -95,9 +95,30 @@ export class MediaService {
     }
 
     async findMyPhotos(userId: string, aoiId?: string): Promise<Photo[]> {
-        const where: any = { uploaded_by_id: userId };
-        if (aoiId) where.aoi_id = aoiId;
-        return this.photoRepository.find({ where, order: { created_at: 'DESC' } });
+        this.logger.log(`[MY-PHOTOS] Request for User: ${userId}, AOI: ${aoiId}`);
+
+        const query = this.photoRepository.createQueryBuilder('photo')
+            .leftJoinAndSelect('photo.form', 'form')
+            .leftJoinAndSelect('photo.uploaded_by', 'uploaded_by');
+
+        if (aoiId) {
+            // Fetch all photos for this AOI, regardless of who uploaded them
+            query.where('photo.aoi_id = :aoiId', { aoiId });
+        } else {
+            // Default: fetch only photos uploaded by this user
+            query.where('photo.uploaded_by_id = :userId', { userId });
+        }
+
+        query.orderBy('photo.created_at', 'DESC');
+
+        const photos = await query.getMany();
+
+        // Detailed debug logging
+        const statusSummary = photos.map(p => `${p.status} (by ${p.uploaded_by_id})`).join(', ');
+        this.logger.log(`[MY-PHOTOS] Found ${photos.length} photos. Summary: ${statusSummary}`);
+        console.log(`[DEBUG] Found ${photos.length} photos. Summary: ${statusSummary}`);
+
+        return photos;
     }
 
     async findAssignedPhotos(userId: string): Promise<Photo[]> {
