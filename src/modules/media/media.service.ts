@@ -240,9 +240,9 @@ export class MediaService {
         if (photo) {
             await this.photoRepository.update(photo.id, {
                 form_id: savedForm.id,
-                status: 'APPROVED'
+                status: 'FORM_SUBMITTED'
             });
-            this.logger.log(`[FORM] Linked form ${savedForm.id} to photo ${photo.id} and set status to APPROVED`);
+            this.logger.log(`[FORM] Linked form ${savedForm.id} to photo ${photo.id} and set status to FORM_SUBMITTED`);
         }
 
         return savedForm;

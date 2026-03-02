@@ -20,7 +20,7 @@ export class AoiController {
 
     // --- Verified: View All AOIs (Admin/Manager) ---
     @Get()
-    @Roles(RoleSlug.ADMIN, RoleSlug.MANAGER)
+    @Roles(RoleSlug.ADMIN, RoleSlug.MANAGER, RoleSlug.SURVEYOR)
     findAll() {
         return this.locationsService.findAllAoi();
     }

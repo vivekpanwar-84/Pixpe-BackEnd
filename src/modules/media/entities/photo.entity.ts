@@ -86,6 +86,7 @@ export class Photo extends BaseEntity {
     form_id: string;
 
     @OneToOne(() => PoiForm, (form) => form.photo)
+    @JoinColumn({ name: 'form_id' })
     form: PoiForm;
 
     // --- Rejection ---
