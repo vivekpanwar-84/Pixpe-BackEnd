@@ -133,7 +133,7 @@ export class UsersService {
 
         if (status === KycStatus.APPROVED) {
             user.kyc_approved_at = new Date();
-            user.kyc_approved_by = approvedBy || ''; // Should be UUID, ensure passed or handled
+            user.kyc_approved_by = approvedBy || null as any;
             user.is_kyc_verified = true;
             user.kyc_rejected_reason = ''; // Clear rejection reason
         } else if (status === KycStatus.REJECTED) {

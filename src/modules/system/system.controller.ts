@@ -29,6 +29,6 @@ export class SystemController {
     @Patch('settings')
     @Roles(RoleSlug.ADMIN)
     updateSetting(@Body() updateDto: UpdateSystemSettingDto, @Req() req: any) {
-        return this.systemService.updateSetting(req.user.userId, updateDto);
+        return this.systemService.updateSetting(req.user.id, updateDto);
     }
 }

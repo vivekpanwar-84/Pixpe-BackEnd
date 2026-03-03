@@ -41,13 +41,13 @@ export class UsersController {
     // --- 4. User: View Own Profile ---
     @Get('profile')
     async getProfile(@Req() req: any) {
-        return this.usersService.findOne(req.user.userId);
+        return this.usersService.findOne(req.user.id);
     }
 
     // --- 5. User: View Own KYC Status ---
     @Get('kyc/status')
     async getMyKycStatus(@Req() req: any) {
-        const user = await this.usersService.findOne(req.user.userId);
+        const user = await this.usersService.findOne(req.user.id);
         return { kyc_status: user.kyc_status, is_verified: user.is_kyc_verified, reason: user.kyc_rejected_reason };
     }
 
@@ -61,7 +61,7 @@ export class UsersController {
     // --- 6. Surveyor/All: Update Own Profile ---
     @Patch('profile')
     updateProfile(@Req() req: any, @Body() updateProfileDto: UpdateProfileDto) {
-        return this.usersService.update(req.user.userId, updateProfileDto);
+        return this.usersService.update(req.user.id, updateProfileDto);
     }
 
     // --- 7. Admin: Update User Details ---
@@ -92,14 +92,14 @@ export class UsersController {
         if (!file) {
             throw new BadRequestException('KYC document file is required. Send as form-data with key "file".');
         }
-        return this.usersService.submitKycDocument(req.user.userId, file);
+        return this.usersService.submitKycDocument(req.user.id, file);
     }
 
     // --- 11. Admin/Manager: Approve/Reject KYC ---
     @Patch(':id/kyc-status')
     @Roles(RoleSlug.ADMIN, RoleSlug.MANAGER)
     updateKycStatus(@Param('id') id: string, @Body() dto: UpdateKycStatusDto, @Req() req: any) {
-        return this.usersService.updateKycStatus(id, dto.status, dto.reason, req.user.userId);
+        return this.usersService.updateKycStatus(id, dto.status, dto.reason, req.user.id);
     }
 
     // --- 12. Admin: Soft Delete User ---

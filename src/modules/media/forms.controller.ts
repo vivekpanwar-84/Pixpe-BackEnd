@@ -15,24 +15,25 @@ export class FormsController {
     @Post()
     @Roles(RoleSlug.EDITOR)
     create(@Body() createFormDto: CreateFormDto, @Req() req: any) {
-        return this.mediaService.createForm(createFormDto, req.user.userId);
+        return this.mediaService.createForm(createFormDto, req.user.id);
     }
 
-    // --- Verified: Manager View All Forms ---
+    // --- Verified: Manager/Editor View All Forms ---
     @Get()
-    @Roles(RoleSlug.MANAGER, RoleSlug.ADMIN)
+    @Roles(RoleSlug.MANAGER, RoleSlug.ADMIN, RoleSlug.EDITOR)
     findAll(
         @Query('status') status?: string,
         @Query('photo_id') photo_id?: string,
-        @Query('aoi_id') aoi_id?: string
+        @Query('aoi_id') aoi_id?: string,
+        @Query('submitted_by') submitted_by?: string
     ) {
-        return this.mediaService.findAllForms(status, photo_id, aoi_id);
+        return this.mediaService.findAllForms(status, photo_id, aoi_id, submitted_by);
     }
 
     // --- Verified: Manager Approve/Reject Form ---
     @Patch(':id/status')
     @Roles(RoleSlug.MANAGER, RoleSlug.ADMIN)
     updateStatus(@Param('id') id: string, @Body() statusDto: UpdateFormStatusDto, @Req() req: any) {
-        return this.mediaService.updateFormStatus(id, statusDto, req.user.userId);
+        return this.mediaService.updateFormStatus(id, statusDto, req.user.id);
     }
 }

@@ -15,7 +15,7 @@ export class AoiController {
     @Post()
     @Roles(RoleSlug.ADMIN, RoleSlug.MANAGER)
     create(@Body() createAoiDto: CreateAoiDto, @Req() req: any) {
-        return this.locationsService.createAoi(createAoiDto, req.user.userId);
+        return this.locationsService.createAoi(createAoiDto, req.user.id);
     }
 
     // --- Verified: View All AOIs (Admin/Manager) ---
@@ -28,16 +28,16 @@ export class AoiController {
     // --- Verified: View Assigned AOIs (Surveyor/Editor) ---
     @Get('assigned')
     @Roles(RoleSlug.SURVEYOR, RoleSlug.EDITOR)
-    findAssigned(@Req() req: any, @Query('role') role?: string) {
+    findAssigned(@Req() req: any, @Query('hasForms') hasForms?: string) {
         // Ideally role is derived from token
         // passing user ID to filter
-        return this.locationsService.findAllAoi(req.user.role, req.user.userId);
+        return this.locationsService.findAllAoi(req.user.role, req.user.id, hasForms === 'true');
     }
 
     @Get('assigned/:id')
     @Roles(RoleSlug.SURVEYOR, RoleSlug.EDITOR)
     findOneAssigned(@Param('id') id: string, @Req() req: any) {
-        return this.locationsService.findOneAssignedAoi(id, req.user.userId, req.user.role);
+        return this.locationsService.findOneAssignedAoi(id, req.user.id, req.user.role);
     }
 
     // --- Verified: Assign AOI ---
@@ -47,7 +47,7 @@ export class AoiController {
         if (!assignDto.surveyor_id && !assignDto.editor_id) {
             throw new BadRequestException('surveyor_id or editor_id must be provided');
         }
-        return this.locationsService.assignAoi(id, assignDto, req.user.userId);
+        return this.locationsService.assignAoi(id, assignDto, req.user.id);
     }
 
     @Patch('bulk-assign')
@@ -59,7 +59,7 @@ export class AoiController {
         if (!bulkDto.surveyor_id && !bulkDto.editor_id) {
             throw new BadRequestException('surveyor_id or editor_id must be provided');
         }
-        return this.locationsService.bulkAssignAoi(bulkDto, req.user.userId);
+        return this.locationsService.bulkAssignAoi(bulkDto, req.user.id);
     }
 
     // --- Verified: Update AOI Details ---
@@ -73,21 +73,21 @@ export class AoiController {
     @Patch(':id/start')
     @Roles(RoleSlug.SURVEYOR)
     start(@Param('id') id: string, @Req() req: any) {
-        return this.locationsService.updateAoiStatus(id, 'IN_PROGRESS', req.user.userId);
+        return this.locationsService.updateAoiStatus(id, 'IN_PROGRESS', req.user.id);
     }
 
     // --- Verified: Surveyor Submit AOI ---
     @Patch(':id/submit')
     @Roles(RoleSlug.SURVEYOR)
     submit(@Param('id') id: string, @Req() req: any) {
-        return this.locationsService.updateAoiStatus(id, 'SUBMITTED', req.user.userId);
+        return this.locationsService.updateAoiStatus(id, 'SUBMITTED', req.user.id);
     }
 
     // --- Verified: Close AOI ---
     @Patch(':id/close')
     @Roles(RoleSlug.ADMIN, RoleSlug.MANAGER)
     close(@Param('id') id: string, @Req() req: any) {
-        return this.locationsService.updateAoiStatus(id, 'CLOSED', req.user.userId);
+        return this.locationsService.updateAoiStatus(id, 'CLOSED', req.user.id);
     }
 
     @Get(':id/stats')

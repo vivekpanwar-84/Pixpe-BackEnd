@@ -19,21 +19,39 @@ export class AiService {
     }
 
     async analyzeImage(imageBuffer: Buffer, mimeType: string): Promise<string> {
-        const promptText = `I am conducting a business survey and need to collect and structure shop details in a standardized format. Please organize the collected information strictly in the following format: 
+        const promptText = `I am conducting a business survey and need to extract structured shop details from images. Please analyze the provided image and organize the information strictly in the following format. 
 
+### FORMAT START ###
 Business Name: 
-Owner Name(s): 
-Phone Number(s): 
-Address: 
-City: 
 Business Category: 
-Basic Business Details: (Brief description of products/services, years in operation, number of employees, target customers, etc.) 
+Business Sub Category: 
+Phone: 
+Alternate Phone: 
+Email: 
+Website: 
+Contact Person Name: 
+Contact Person Designation: 
+Latitude: 
+Longitude: 
+Address Line 1: 
+Address Line 2: 
+Landmark: 
+City: 
+State: 
+Pin Code: 
+Country: 
+### FORMAT END ###
 
 Ensure: 
-- Phone numbers are written clearly with country code if available. 
-- Address includes area/locality and PIN code if possible. 
-- Business details are concise but informative (2–4 lines). 
-- No field should be left blank. If information is unavailable, write “Not Provided”.`;
+- **STRICT LABELS**: ONLY use the labels provided above. DO NOT add any extra labels like "Owner Name:", "Basic Business Details:", or "Address:".
+- **NO SUMMARIES**: DO NOT provide descriptions, summaries, or conversational text. ONLY provide the extracted value itself.
+- **FIELD ISOLATION**: DO NOT put address details in the Phone field. DO NOT put owner names in the Business Name field unless they are part of the shop name.
+- **Multiple Phone Numbers**: If the image contains multiple phone numbers, put the first one in "Phone" and the second one in "Alternate Phone". DO NOT put both in one field.
+- **Short/Long Addresses**: If the address is long or spans multiple lines, put the primary shop/house number and street in "Address Line 1" and the remaining locality/area details in "Address Line 2".
+- If any information is not visible or identifiable in the image, write "Not Provided" for that field.
+- For Latitude and Longitude, only provide them if they are explicitly written as text in the image (e.g., on a sign or board). Otherwise, write "Not Provided".
+- For Country, if not found, default to "India" if the context suggests so, otherwise "Not Provided".
+- Do not add any extra text, conversation, or markdown formatting outside of the requested labels.`;
 
         try {
             const response = await this.ai.models.generateContent({

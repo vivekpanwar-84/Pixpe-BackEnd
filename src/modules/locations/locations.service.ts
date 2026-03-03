@@ -32,7 +32,7 @@ export class LocationsService {
         return this.aoiRepository.save(aoi);
     }
 
-    async findAllAoi(role?: string, userId?: string): Promise<AoiArea[]> {
+    async findAllAoi(role?: string, userId?: string, hasForms?: boolean): Promise<AoiArea[]> {
         const query = this.aoiRepository.createQueryBuilder('aoi')
             .leftJoinAndSelect('aoi.assigned_to_surveyor', 'assigned_to_surveyor')
             .leftJoinAndSelect('aoi.assigned_to_editor', 'assigned_to_editor')
@@ -42,6 +42,20 @@ export class LocationsService {
             if (userId) query.where('aoi.assigned_to_surveyor_id = :userId', { userId });
         } else if (role === 'editor') {
             if (userId) query.where('aoi.assigned_to_editor_id = :userId', { userId });
+        }
+
+        if (hasForms) {
+            // Filter AOIs that have at least one photo with a filled form
+            query.innerJoin(Photo, 'photo', 'photo.aoi_id = aoi.id')
+                .innerJoin('photo.form', 'poi_form')
+                .where('poi_form.id IS NOT NULL');
+
+            // Re-apply role filter if it was overwritten by where
+            if (role === 'editor' && userId) {
+                query.andWhere('aoi.assigned_to_editor_id = :userId', { userId });
+            } else if (role === 'surveyor' && userId) {
+                query.andWhere('aoi.assigned_to_surveyor_id = :userId', { userId });
+            }
         }
 
         return query.getMany();

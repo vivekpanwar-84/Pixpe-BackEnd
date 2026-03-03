@@ -1,8 +1,9 @@
 import { Injectable, NotFoundException, InternalServerErrorException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { Photo } from './entities/photo.entity';
 import { PoiForm } from '../workflow/entities/poi-form.entity';
+import { Form } from '../workflow/entities/form.entity';
 import { AoiArea } from '../locations/entities/aoi-area.entity';
 import { UploadPhotoDto, UpdatePhotoStatusDto } from './dto/photo.dto';
 import { CreateFormDto, UpdateFormStatusDto } from './dto/form.dto';
@@ -16,10 +17,13 @@ export class MediaService {
         @InjectRepository(Photo)
         private photoRepository: Repository<Photo>,
         @InjectRepository(PoiForm)
-        private formRepository: Repository<PoiForm>,
+        private poiFormRepository: Repository<PoiForm>,
+        @InjectRepository(Form)
+        private formRepository: Repository<Form>,
         @InjectRepository(AoiArea)
         private aoiRepository: Repository<AoiArea>,
         private supabaseService: SupabaseService,
+        private dataSource: DataSource,
     ) { }
 
     // --- Photo Operations ---
@@ -124,14 +128,14 @@ export class MediaService {
     async findAssignedPhotos(userId: string): Promise<Photo[]> {
         return this.photoRepository.find({
             where: { assigned_to_id: userId },
-            relations: ['uploaded_by'],
+            relations: ['uploaded_by', 'form', 'form.form'],
         });
     }
 
     async findOneAssignedPhoto(id: string, userId: string): Promise<Photo> {
         const photo = await this.photoRepository.findOne({
             where: { id, assigned_to_id: userId },
-            relations: ['uploaded_by', 'aoi', 'form'],
+            relations: ['uploaded_by', 'aoi', 'form', 'form.form'],
         });
         if (!photo) throw new NotFoundException('Assigned photo not found');
         return photo;
@@ -141,7 +145,7 @@ export class MediaService {
         const where: any = {};
         if (status) where.status = status;
         if (aoiId) where.aoi_id = aoiId;
-        return this.photoRepository.find({ where, relations: ['uploaded_by', 'form'], order: { created_at: 'DESC' } });
+        return this.photoRepository.find({ where, relations: ['uploaded_by', 'form', 'form.form'], order: { created_at: 'DESC' } });
     }
 
     async assignPhoto(id: string, editorId: string, userId: string): Promise<Photo> {
@@ -178,7 +182,7 @@ export class MediaService {
                 aoi_id: aoiId,
                 assigned_to_id: editorId,
             },
-            relations: ['uploaded_by', 'aoi', 'form'],
+            relations: ['uploaded_by', 'aoi', 'form', 'form.form'],
             order: { created_at: 'DESC' },
         });
     }
@@ -204,68 +208,128 @@ export class MediaService {
     // --- Form Operations ---
 
     async createForm(createFormDto: CreateFormDto, userId: string): Promise<PoiForm> {
-        let aoiId = null;
-        let photo = null;
+        return this.dataSource.transaction(async (manager) => {
+            let aoiId = null;
+            let photo = null;
 
-        if (createFormDto.linked_photo_id) {
-            photo = await this.photoRepository.findOne({ where: { id: createFormDto.linked_photo_id } });
-            if (photo) {
-                aoiId = photo.aoi_id;
+            if (createFormDto.linked_photo_id) {
+                photo = await manager.findOne(Photo, { where: { id: createFormDto.linked_photo_id } });
+                if (photo) {
+                    aoiId = photo.aoi_id;
+                }
             }
-        }
 
-        // Check if a form already exists for this photo (Upsert logic)
-        let form = await this.formRepository.findOne({ where: { photo_id: createFormDto.linked_photo_id } });
-
-        if (form) {
-            form.form_data = createFormDto.form_data;
-            form.aoi_id = aoiId ?? form.aoi_id;
-            form.submitted_by_id = userId;
-            form.review_status = 'PENDING';
-            this.logger.log(`[FORM] Updating existing form ${form.id} for photo ${createFormDto.linked_photo_id}`);
-        } else {
-            form = this.formRepository.create({
-                form_data: createFormDto.form_data,
-                photo_id: createFormDto.linked_photo_id,
-                aoi_id: aoiId ?? undefined,
-                submitted_by_id: userId,
-                review_status: 'PENDING',
+            // 1. Check if a PoiForm already exists for this photo
+            let poiForm = await manager.findOne(PoiForm, {
+                where: { photo_id: createFormDto.linked_photo_id },
+                relations: ['form']
             });
-            this.logger.log(`[FORM] Creating new form for photo ${createFormDto.linked_photo_id}`);
-        }
 
-        const savedForm = await this.formRepository.save(form);
+            let form: Form;
 
-        // Update photo status and link form
-        if (photo) {
-            await this.photoRepository.update(photo.id, {
-                form_id: savedForm.id,
-                status: 'FORM_SUBMITTED'
-            });
-            this.logger.log(`[FORM] Linked form ${savedForm.id} to photo ${photo.id} and set status to FORM_SUBMITTED`);
-        }
+            // 2. Create or Update the structured Form data
+            const formPayload = {
+                business_name: createFormDto.business_name,
+                business_category: createFormDto.business_category,
+                business_sub_category: createFormDto.business_sub_category,
+                phone: createFormDto.phone,
+                alternate_phone: createFormDto.alternate_phone,
+                email: createFormDto.email,
+                website: createFormDto.website,
+                contact_person_name: createFormDto.contact_person_name,
+                contact_person_designation: createFormDto.contact_person_designation,
+                latitude: createFormDto.latitude,
+                longitude: createFormDto.longitude,
+                address_line1: createFormDto.address_line1,
+                address_line2: createFormDto.address_line2,
+                landmark: createFormDto.landmark,
+                city: createFormDto.city,
+                state: createFormDto.state,
+                pin_code: createFormDto.pin_code,
+                country: createFormDto.country || 'India',
+                locale: createFormDto.locale,
+                services_offered: createFormDto.services_offered,
+                operating_hours: createFormDto.operating_hours,
+                notes: createFormDto.notes,
+                tags: createFormDto.tags,
+                gps_accuracy_meters: createFormDto.gps_accuracy_meters,
+                is_gps_adjusted: createFormDto.is_gps_adjusted,
+                created_by: userId,
+            };
 
-        return savedForm;
+            if (poiForm?.form_id) {
+                // Update existing Form record
+                await manager.update(Form, poiForm.form_id, {
+                    ...formPayload,
+                    updated_at: new Date()
+                } as any);
+                form = await manager.findOne(Form, { where: { id: poiForm.form_id } }) as Form;
+                this.logger.log(`[FORM] Updated existing structured form data ${form.id}`);
+            } else {
+                // Create new Form record
+                form = manager.create(Form, formPayload as any);
+                form = await manager.save(Form, form);
+                this.logger.log(`[FORM] Created new structured form data ${form.id}`);
+            }
+
+            // 3. Create or Update the PoiForm (Workflow record)
+            if (poiForm) {
+                poiForm.form_id = form.id;
+                poiForm.aoi_id = aoiId ?? poiForm.aoi_id;
+                poiForm.submitted_by_id = userId;
+                poiForm.review_status = 'PENDING';
+                poiForm.submitted_at = new Date();
+                this.logger.log(`[FORM] Updating workflow record ${poiForm.id} for photo ${createFormDto.linked_photo_id}`);
+            } else {
+                poiForm = manager.create(PoiForm, {
+                    form_id: form.id,
+                    photo_id: createFormDto.linked_photo_id,
+                    aoi_id: aoiId ?? undefined,
+                    submitted_by_id: userId,
+                    review_status: 'PENDING',
+                });
+                this.logger.log(`[FORM] Creating new workflow record for photo ${createFormDto.linked_photo_id}`);
+            }
+
+            const savedPoiForm = await manager.save(PoiForm, poiForm);
+
+            // 4. Update photo status and link form
+            if (photo) {
+                await manager.update(Photo, photo.id, {
+                    form_id: savedPoiForm.id,
+                    status: 'FORM_SUBMITTED'
+                });
+                this.logger.log(`[FORM] Linked workflow ${savedPoiForm.id} to photo ${photo.id} and set status to FORM_SUBMITTED`);
+            }
+
+            return savedPoiForm;
+        });
     }
-    async findAllForms(status?: string, photoId?: string, aoiId?: string): Promise<PoiForm[]> {
+
+    async findAllForms(status?: string, photoId?: string, aoiId?: string, submittedById?: string): Promise<PoiForm[]> {
         const where: any = {};
         if (status) where.review_status = status;
         if (photoId) where.photo_id = photoId;
         if (aoiId) where.aoi_id = aoiId;
-        return this.formRepository.find({ where, relations: ['submitted_by'], order: { created_at: 'DESC' } });
+        if (submittedById) where.submitted_by_id = submittedById;
+        return this.poiFormRepository.find({
+            where,
+            relations: ['submitted_by', 'photo', 'aoi', 'form'],
+            order: { created_at: 'DESC' }
+        });
     }
 
     async updateFormStatus(id: string, updateDto: UpdateFormStatusDto, userId: string): Promise<PoiForm> {
-        const form = await this.formRepository.findOne({ where: { id } });
-        if (!form) throw new NotFoundException('Form not found');
+        const poiForm = await this.poiFormRepository.findOne({ where: { id } });
+        if (!poiForm) throw new NotFoundException('Form not found');
 
-        form.review_status = updateDto.status;
-        form.reviewed_by_id = userId;
-        form.reviewed_at = new Date();
+        poiForm.review_status = updateDto.status;
+        poiForm.reviewed_by_id = userId;
+        poiForm.reviewed_at = new Date();
         if (updateDto.status === 'REJECTED') {
-            form.review_notes = updateDto.rejection_reason || '';
+            poiForm.review_notes = updateDto.rejection_reason || '';
         }
 
-        return this.formRepository.save(form);
+        return this.poiFormRepository.save(poiForm);
     }
 }

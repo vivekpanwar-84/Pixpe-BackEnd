@@ -15,14 +15,14 @@ export class RewardsController {
     @Post('request')
     @Roles(RoleSlug.SURVEYOR)
     createRequest(@Body() createDto: CreateRewardRequestDto, @Req() req: any) {
-        return this.workflowService.createRewardRequest(createDto, req.user.userId);
+        return this.workflowService.createRewardRequest(createDto, req.user.id);
     }
 
     // --- Surveyor: View Earnings ---
     @Get('my-earnings')
     @Roles(RoleSlug.SURVEYOR)
     findMyEarnings(@Req() req: any) {
-        return this.workflowService.findMyRewards(req.user.userId);
+        return this.workflowService.findMyRewards(req.user.id);
     }
 
     // --- Manager/Admin: View All Requests ---
@@ -40,7 +40,7 @@ export class RewardsController {
         // Service handles payment check (must be approved first).
         // Here strict role check could be added if needed?
         // For now relying on trusted roles.
-        return this.workflowService.updateRewardStatus(id, updateDto, req.user.userId);
+        return this.workflowService.updateRewardStatus(id, updateDto, req.user.id);
     }
 
     // --- Admin: Dashboard Stats ---

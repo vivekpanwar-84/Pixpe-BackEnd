@@ -12,6 +12,8 @@ import { WorkflowModule } from './modules/workflow/workflow.module';
 import { SystemModule } from './modules/system/system.module';
 import { AiModule } from './modules/ai/ai.module';
 
+import { KycModule } from './modules/users/kyc.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -34,6 +36,7 @@ import { AiModule } from './modules/ai/ai.module';
     WorkflowModule,
     SystemModule,
     AiModule,
+    KycModule,
   ],
   controllers: [AppController],
   providers: [AppService],

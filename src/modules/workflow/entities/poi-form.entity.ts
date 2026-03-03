@@ -3,6 +3,7 @@ import { BaseEntity } from '../../../common/entities/base.entity';
 import { Photo } from '../../media/entities/photo.entity';
 import { AoiArea } from '../../locations/entities/aoi-area.entity';
 import { User } from '../../users/entities/user.entity';
+import { Form } from './form.entity';
 
 @Entity('poi_forms')
 export class PoiForm extends BaseEntity {
@@ -20,9 +21,13 @@ export class PoiForm extends BaseEntity {
     @JoinColumn({ name: 'aoi_id' })
     aoi: AoiArea;
 
-    // --- Form Data ---
-    @Column({ type: 'jsonb' })
-    form_data: any;
+    // --- Form Tracking ---
+    @Column({ type: 'uuid', nullable: true })
+    form_id: string;
+
+    @OneToOne(() => Form)
+    @JoinColumn({ name: 'form_id' })
+    form: Form;
 
     // --- Submission ---
     @Column({ type: 'uuid' })

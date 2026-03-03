@@ -25,27 +25,27 @@ export class PhotosController {
         if (!file) {
             throw new BadRequestException('Photo file is required. Send as form-data with key "file".');
         }
-        return this.mediaService.uploadPhoto(file, uploadPhotoDto, req.user.userId);
+        return this.mediaService.uploadPhoto(file, uploadPhotoDto, req.user.id);
     }
 
     // --- Surveyor: View My Uploads ---
     @Get('my-uploads')
     @Roles(RoleSlug.SURVEYOR)
     findMyUploads(@Req() req: any, @Query('aoi_id') aoi_id?: string) {
-        return this.mediaService.findMyPhotos(req.user.userId, aoi_id);
+        return this.mediaService.findMyPhotos(req.user.id, aoi_id);
     }
 
     // --- Editor: View Assigned Photos ---
     @Get('assigned')
     @Roles(RoleSlug.EDITOR)
     findAssigned(@Req() req: any) {
-        return this.mediaService.findAssignedPhotos(req.user.userId);
+        return this.mediaService.findAssignedPhotos(req.user.id);
     }
 
     @Get('assigned/:id')
     @Roles(RoleSlug.EDITOR)
     findOneAssigned(@Param('id') id: string, @Req() req: any) {
-        return this.mediaService.findOneAssignedPhoto(id, req.user.userId);
+        return this.mediaService.findOneAssignedPhoto(id, req.user.id);
     }
 
     @Get('aoi/:aoiId/editor/:editorId')
@@ -68,33 +68,33 @@ export class PhotosController {
     @Patch(':id/assign')
     @Roles(RoleSlug.MANAGER, RoleSlug.ADMIN)
     assign(@Param('id') id: string, @Body() assignDto: AssignPhotoDto, @Req() req: any) {
-        return this.mediaService.assignPhoto(id, assignDto.editor_id, req.user.userId);
+        return this.mediaService.assignPhoto(id, assignDto.editor_id, req.user.id);
     }
 
     // --- Manager: Approve/Reject Photo ---
     @Patch(':id/status')
     @Roles(RoleSlug.MANAGER, RoleSlug.ADMIN)
     updateStatus(@Param('id') id: string, @Body() statusDto: UpdatePhotoStatusDto, @Req() req: any) {
-        return this.mediaService.updatePhotoStatus(id, statusDto, req.user.userId);
+        return this.mediaService.updatePhotoStatus(id, statusDto, req.user.id);
     }
 
     // --- Surveyor: Resubmit Rejected Photo ---
     @Patch(':id/resubmit')
     @Roles(RoleSlug.SURVEYOR)
     resubmit(@Param('id') id: string, @Req() req: any) {
-        return this.mediaService.updatePhotoStatus(id, { status: 'RESUBMITTED' }, req.user.userId);
+        return this.mediaService.updatePhotoStatus(id, { status: 'RESUBMITTED' }, req.user.id);
     }
 
     // --- Editor: Request Re-upload ---
     @Patch(':id/request-reupload')
     @Roles(RoleSlug.EDITOR)
     requestReupload(@Param('id') id: string, @Body('reason') reason: string, @Req() req: any) {
-        return this.mediaService.updatePhotoStatus(id, { status: 'REJECTED', rejection_reason: reason }, req.user.userId);
+        return this.mediaService.updatePhotoStatus(id, { status: 'REJECTED', rejection_reason: reason }, req.user.id);
     }
 
     @Delete(':id')
     @Roles(RoleSlug.SURVEYOR, RoleSlug.ADMIN)
     remove(@Param('id') id: string, @Req() req: any) {
-        return this.mediaService.deletePhoto(id, req.user.userId);
+        return this.mediaService.deletePhoto(id, req.user.id);
     }
 }
