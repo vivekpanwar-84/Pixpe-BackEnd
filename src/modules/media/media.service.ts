@@ -49,7 +49,8 @@ export class MediaService {
         const dateStr = now.toISOString().slice(0, 10).replace(/-/g, ''); // 20260221
         const aoiShort = dto.aoi_id.replace(/-/g, '').slice(0, 8);       // first 8 chars
         const ext = file.mimetype.split('/')[1]?.replace('jpeg', 'jpg') || 'jpg';
-        const fileName = `PIXPE_${dateStr}_${aoiShort}_${seq}.${ext}`;
+        const randomSuffix = Math.random().toString(36).substring(2, 6); // 4-char random string
+        const fileName = `PIXPE_${dateStr}_${aoiShort}_${seq}_${randomSuffix}.${ext}`;
 
         // 3. Upload to Supabase
         const photoUrl = await this.supabaseService.uploadFile(
@@ -83,7 +84,7 @@ export class MediaService {
             aoi_id: dto.aoi_id,
             photo_url: photoUrl,
             file_size_kb: fileSizeKb,
-            photo_type: dto.photo_type,
+            photo_type: dto.photo_type || 'OTHER',
             latitude: dto.latitude,
             longitude: dto.longitude,
             uploaded_by_id: userId,

@@ -23,7 +23,7 @@ export class Photo extends BaseEntity {
     @Column({ type: 'int', nullable: true })
     file_size_kb: number;
 
-    @Column({ type: 'varchar', length: 50 })
+    @Column({ type: 'varchar', length: 50, nullable: true })
     photo_type: string; // STOREFRONT, SIGNBOARD, INTERIOR, PRODUCT, CONTACT_DETAILS
 
     // --- Metadata ---

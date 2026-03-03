@@ -31,7 +31,7 @@ export class SupabaseService {
             .from(this.bucket)
             .upload(fileName, buffer, {
                 contentType: mimeType,
-                upsert: false,
+                upsert: true,
             });
 
         if (error) {

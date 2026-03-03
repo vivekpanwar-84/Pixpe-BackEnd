@@ -18,9 +18,6 @@ export class SignupDto {
     @IsOptional()
     phone?: string;
 
-    // @IsEnum(RoleSlug, { message: 'role must be one of: admin, manager, editor, surveyor' })
-    // @IsNotEmpty()
-    // role: RoleSlug;
     @IsEnum(RoleSlug, { message: 'role must be one of: admin, manager, editor, surveyor' })
     @IsOptional() // important hai ye 
     role: RoleSlug = RoleSlug.SURVEYOR;

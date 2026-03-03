@@ -30,6 +30,11 @@ export class UsersService {
         const existingUser = await this.findByEmail(createUserDto.email);
         if (existingUser) throw new ConflictException('Email already exists');
 
+        if (createUserDto.phone) {
+            const existingPhone = await this.findByPhone(createUserDto.phone);
+            if (existingPhone) throw new ConflictException('Phone number already exists');
+        }
+
         const role = await this.rolesRepository.findOne({ where: { slug: createUserDto.role } });
         if (!role) throw new BadRequestException('Invalid Role');
 
