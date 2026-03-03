@@ -21,8 +21,8 @@ export class AoiController {
     // --- Verified: View All AOIs (Admin/Manager) ---
     @Get()
     @Roles(RoleSlug.ADMIN, RoleSlug.MANAGER, RoleSlug.SURVEYOR)
-    findAll() {
-        return this.locationsService.findAllAoi();
+    findAll(@Query('unassigned') unassigned?: string) {
+        return this.locationsService.findAllAoi(undefined, undefined, false, unassigned === 'true');
     }
 
     // --- Verified: View Assigned AOIs (Surveyor/Editor) ---

@@ -32,7 +32,7 @@ export class LocationsService {
         return this.aoiRepository.save(aoi);
     }
 
-    async findAllAoi(role?: string, userId?: string, hasForms?: boolean): Promise<AoiArea[]> {
+    async findAllAoi(role?: string, userId?: string, hasForms?: boolean, unassignedOnly?: boolean): Promise<AoiArea[]> {
         const query = this.aoiRepository.createQueryBuilder('aoi')
             .leftJoinAndSelect('aoi.assigned_to_surveyor', 'assigned_to_surveyor')
             .leftJoinAndSelect('aoi.assigned_to_editor', 'assigned_to_editor')
@@ -42,6 +42,10 @@ export class LocationsService {
             if (userId) query.where('aoi.assigned_to_surveyor_id = :userId', { userId });
         } else if (role === 'editor') {
             if (userId) query.where('aoi.assigned_to_editor_id = :userId', { userId });
+        }
+
+        if (unassignedOnly) {
+            query.andWhere('aoi.assigned_to_surveyor_id IS NULL');
         }
 
         if (hasForms) {
