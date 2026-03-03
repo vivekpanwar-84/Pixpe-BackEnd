@@ -6,7 +6,7 @@ export class UploadPhotoDto {
     aoi_id: string;
 
     @IsString()
-    @IsNotEmpty()
+    @IsOptional()
     photo_type: string; // STOREFRONT, SIGNBOARD, INTERIOR, PRODUCT, CONTACT_DETAILS
 
     @Type(() => Number)
