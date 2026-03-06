@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { AoiRequest, AoiRequestStatus } from './entities/aoi-request.entity';
+import { AoiRequest, AoiRequestStatus, AoiRequestType } from './entities/aoi-request.entity';
 import { AoiArea } from './entities/aoi-area.entity';
 import { CreateAoiRequestDto, UpdateAoiRequestStatusDto } from './dto/aoi-request.dto';
 import { LocationsService } from './locations.service';
@@ -20,29 +20,44 @@ export class AoiRequestsService {
         const aoi = await this.aoiRepository.findOne({ where: { id: createDto.aoi_id } });
         if (!aoi) throw new NotFoundException('AOI not found');
 
-        // Check if already assigned
-        if (aoi.assigned_to_surveyor_id) {
-            throw new BadRequestException('AOI is already assigned to a surveyor');
+        const requestType = createDto.request_type || AoiRequestType.ASSIGNMENT;
+
+        if (requestType === AoiRequestType.ASSIGNMENT) {
+            // Check if already assigned
+            if (aoi.assigned_to_surveyor_id) {
+                throw new BadRequestException('AOI is already assigned to a surveyor');
+            }
+        } else if (requestType === AoiRequestType.REOPEN) {
+            // Check if assigned to the requester
+            if (aoi.assigned_to_surveyor_id !== userId) {
+                throw new BadRequestException('You can only request to reopen AOIs assigned to you');
+            }
+            // Check status (only SUBMITTED/COMPLETED/CLOSED can be reopened)
+            if (!['SUBMITTED', 'COMPLETED', 'CLOSED'].includes(aoi.status)) {
+                throw new BadRequestException(`AOI in status ${aoi.status} cannot be reopened`);
+            }
         }
 
-        // Check for existing pending request from this user
+        // Check for existing pending request of SAME TYPE from this user
         const existing = await this.aoiRequestRepository.findOne({
             where: {
                 aoi_id: createDto.aoi_id,
                 surveyor_id: userId,
-                status: AoiRequestStatus.PENDING
+                status: AoiRequestStatus.PENDING,
+                request_type: requestType
             }
         });
 
         if (existing) {
-            throw new ConflictException('You already have a pending request for this AOI');
+            throw new ConflictException(`You already have a pending ${requestType.toLowerCase()} request for this AOI`);
         }
 
         const request = this.aoiRequestRepository.create({
             aoi_id: createDto.aoi_id,
             surveyor_id: userId,
             request_notes: createDto.request_notes,
-            status: AoiRequestStatus.PENDING
+            status: AoiRequestStatus.PENDING,
+            request_type: requestType
         });
 
         return this.aoiRequestRepository.save(request);
@@ -81,24 +96,30 @@ export class AoiRequestsService {
         request.reviewed_at = new Date();
 
         if (updateDto.status === AoiRequestStatus.APPROVED) {
-            // Assign AOI to surveyor
-            await this.locationsService.assignAoi(request.aoi_id, { surveyor_id: request.surveyor_id }, managerId);
+            if (request.request_type === AoiRequestType.REOPEN) {
+                // Reopen AOI: Set status back to IN_PROGRESS
+                await this.locationsService.updateAoiStatus(request.aoi_id, 'IN_PROGRESS', managerId);
+            } else {
+                // Assignment Request: Assign AOI to surveyor
+                await this.locationsService.assignAoi(request.aoi_id, { surveyor_id: request.surveyor_id }, managerId);
 
-            // Reject all other pending requests for this AOI
-            await this.aoiRequestRepository.createQueryBuilder()
-                .update(AoiRequest)
-                .set({
-                    status: AoiRequestStatus.REJECTED,
-                    manager_notes: 'AOI assigned to another surveyor',
-                    reviewed_by_id: managerId,
-                    reviewed_at: new Date()
-                })
-                .where('aoi_id = :aoiId AND id != :requestId AND status = :status', {
-                    aoiId: request.aoi_id,
-                    requestId: request.id,
-                    status: AoiRequestStatus.PENDING
-                })
-                .execute();
+                // Reject all other pending ASSIGNMENT requests for this AOI
+                await this.aoiRequestRepository.createQueryBuilder()
+                    .update(AoiRequest)
+                    .set({
+                        status: AoiRequestStatus.REJECTED,
+                        manager_notes: 'AOI assigned to another surveyor',
+                        reviewed_by_id: managerId,
+                        reviewed_at: new Date()
+                    })
+                    .where('aoi_id = :aoiId AND id != :requestId AND status = :status AND request_type = :type', {
+                        aoiId: request.aoi_id,
+                        requestId: request.id,
+                        status: AoiRequestStatus.PENDING,
+                        type: AoiRequestType.ASSIGNMENT
+                    })
+                    .execute();
+            }
         }
 
         return this.aoiRequestRepository.save(request);

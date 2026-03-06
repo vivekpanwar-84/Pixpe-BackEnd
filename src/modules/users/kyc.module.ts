@@ -4,9 +4,13 @@ import { KycDocument } from './entities/kyc-document.entity';
 import { User } from './entities/user.entity';
 import { KycService } from './services/kyc.service';
 import { KycController } from './controllers/kyc.controller';
+import { MediaModule } from '../media/media.module';
 
 @Module({
-    imports: [TypeOrmModule.forFeature([KycDocument, User])],
+    imports: [
+        TypeOrmModule.forFeature([KycDocument, User]),
+        MediaModule
+    ],
     controllers: [KycController],
     providers: [KycService],
     exports: [KycService],

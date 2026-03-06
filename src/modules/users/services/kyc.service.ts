@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { KycDocument } from '../entities/kyc-document.entity';
 import { User, KycStatus } from '../entities/user.entity';
 import { SubmitKycDto } from '../dto/submit-kyc.dto';
+import { SupabaseService } from '../../media/supabase.service';
 
 @Injectable()
 export class KycService {
@@ -12,6 +13,7 @@ export class KycService {
         private kycRepo: Repository<KycDocument>,
         @InjectRepository(User)
         private userRepo: Repository<User>,
+        private supabaseService: SupabaseService,
     ) { }
 
     async submitKyc(userId: string, dto: SubmitKycDto) {
@@ -63,5 +65,36 @@ export class KycService {
             rejection_reason: user.kyc_rejected_reason,
             document: kycDoc || null
         };
+    }
+
+    async uploadKycDocument(userId: string, file: Express.Multer.File, type: string) {
+        try {
+            console.log(`[KycService] Uploading ${type} for user ${userId}`);
+            const user = await this.userRepo.findOne({ where: { id: userId } });
+            if (!user) throw new NotFoundException('User not found');
+
+            // Sanitize name for folder path
+            const sanitizedName = (user.name || 'unknown').replace(/\s+/g, '_').toLowerCase();
+
+            // Build custom path
+            const timestamp = Date.now();
+            const ext = file.mimetype.split('/')[1]?.replace('jpeg', 'jpg') || 'jpg';
+            const fileName = `kyc_documents/${sanitizedName}/${type.toLowerCase()}_${timestamp}.${ext}`;
+
+            console.log(`[KycService] Targeted path: ${fileName}, Mime: ${file.mimetype}`);
+
+            // Upload to Supabase
+            const publicUrl = await this.supabaseService.uploadFile(
+                file.buffer,
+                file.mimetype,
+                fileName
+            );
+
+            console.log(`[KycService] Upload successful: ${publicUrl}`);
+            return { url: publicUrl };
+        } catch (error) {
+            console.error(`[KycService] Upload failed for user ${userId}:`, error);
+            throw error;
+        }
     }
 }

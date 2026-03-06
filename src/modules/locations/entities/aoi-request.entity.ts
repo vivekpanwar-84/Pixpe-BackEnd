@@ -9,6 +9,11 @@ export enum AoiRequestStatus {
     REJECTED = 'REJECTED'
 }
 
+export enum AoiRequestType {
+    ASSIGNMENT = 'ASSIGNMENT',
+    REOPEN = 'REOPEN'
+}
+
 @Entity('aoi_requests')
 export class AoiRequest extends BaseEntity {
     @Column({ type: 'uuid' })
@@ -31,6 +36,13 @@ export class AoiRequest extends BaseEntity {
         default: AoiRequestStatus.PENDING
     })
     status: AoiRequestStatus;
+
+    @Column({
+        type: 'enum',
+        enum: AoiRequestType,
+        default: AoiRequestType.ASSIGNMENT
+    })
+    request_type: AoiRequestType;
 
     @Column({ type: 'text', nullable: true })
     request_notes: string;

@@ -1,5 +1,5 @@
 import { IsString, IsOptional, IsEnum, IsUUID } from 'class-validator';
-import { AoiRequestStatus } from '../entities/aoi-request.entity';
+import { AoiRequestStatus, AoiRequestType } from '../entities/aoi-request.entity';
 
 export class CreateAoiRequestDto {
     @IsUUID()
@@ -8,6 +8,10 @@ export class CreateAoiRequestDto {
     @IsString()
     @IsOptional()
     request_notes?: string;
+
+    @IsEnum(AoiRequestType)
+    @IsOptional()
+    request_type?: AoiRequestType;
 }
 
 export class UpdateAoiRequestStatusDto {
