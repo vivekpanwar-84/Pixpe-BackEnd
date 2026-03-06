@@ -5,9 +5,13 @@ import { Form } from './entities/form.entity';
 import { Reward } from './entities/reward.entity';
 import { WorkflowService } from './workflow.service';
 import { RewardsController } from './rewards.controller';
+import { SystemModule } from '../system/system.module';
 
 @Module({
-    imports: [TypeOrmModule.forFeature([Reward, Form, PoiForm])],
+    imports: [
+        TypeOrmModule.forFeature([Reward, Form, PoiForm]),
+        SystemModule,
+    ],
     controllers: [RewardsController],
     providers: [WorkflowService],
     exports: [WorkflowService, TypeOrmModule],

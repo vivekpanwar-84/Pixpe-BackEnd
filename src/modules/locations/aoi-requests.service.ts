@@ -5,6 +5,7 @@ import { AoiRequest, AoiRequestStatus, AoiRequestType } from './entities/aoi-req
 import { AoiArea } from './entities/aoi-area.entity';
 import { CreateAoiRequestDto, UpdateAoiRequestStatusDto } from './dto/aoi-request.dto';
 import { LocationsService } from './locations.service';
+import { NotificationsService } from '../system/services/notifications.service';
 
 @Injectable()
 export class AoiRequestsService {
@@ -14,6 +15,7 @@ export class AoiRequestsService {
         @InjectRepository(AoiArea)
         private aoiRepository: Repository<AoiArea>,
         private locationsService: LocationsService,
+        private notificationsService: NotificationsService,
     ) { }
 
     async createRequest(createDto: CreateAoiRequestDto, userId: string): Promise<AoiRequest> {
@@ -96,6 +98,7 @@ export class AoiRequestsService {
         request.reviewed_at = new Date();
 
         if (updateDto.status === AoiRequestStatus.APPROVED) {
+            console.log(`[AoiRequestsService] Approving request ${id} of type ${request.request_type}`);
             if (request.request_type === AoiRequestType.REOPEN) {
                 // Reopen AOI: Set status back to IN_PROGRESS
                 await this.locationsService.updateAoiStatus(request.aoi_id, 'IN_PROGRESS', managerId);
@@ -120,6 +123,18 @@ export class AoiRequestsService {
                     })
                     .execute();
             }
+
+            // Notify Surveyor
+            console.log(`[AoiRequestsService] Sending notification to surveyor ${request.surveyor_id}`);
+            await this.notificationsService.createNotification({
+                user_id: request.surveyor_id,
+                title: request.request_type === AoiRequestType.REOPEN ? 'AOI Reopened' : 'AOI Assigned',
+                message: `Your request for AOI ${request.aoi?.aoi_code || ''} has been approved.`,
+                notification_type: request.request_type === AoiRequestType.REOPEN ? 'AOI_REOPENED' : 'AOI_ASSIGNED',
+                reference_type: 'AOI',
+                reference_id: request.aoi_id,
+                created_by_id: managerId,
+            });
         }
 
         return this.aoiRequestRepository.save(request);

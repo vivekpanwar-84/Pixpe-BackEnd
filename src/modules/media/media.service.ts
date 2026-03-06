@@ -8,6 +8,7 @@ import { AoiArea } from '../locations/entities/aoi-area.entity';
 import { UploadPhotoDto, UpdatePhotoStatusDto } from './dto/photo.dto';
 import { CreateFormDto, UpdateFormStatusDto } from './dto/form.dto';
 import { SupabaseService } from './supabase.service';
+import { NotificationsService } from '../system/services/notifications.service';
 
 @Injectable()
 export class MediaService {
@@ -23,6 +24,7 @@ export class MediaService {
         @InjectRepository(AoiArea)
         private aoiRepository: Repository<AoiArea>,
         private supabaseService: SupabaseService,
+        private notificationsService: NotificationsService,
         private dataSource: DataSource,
     ) { }
 
@@ -174,7 +176,21 @@ export class MediaService {
             photo.resubmitted_at = new Date();
         }
 
-        return this.photoRepository.save(photo);
+        const savedPhoto = await this.photoRepository.save(photo);
+
+        if (updateDto.status === 'REJECTED') {
+            await this.notificationsService.createNotification({
+                user_id: savedPhoto.uploaded_by_id,
+                title: 'Photo Rejected',
+                message: `Your photo for AOI has been rejected. Reason: ${updateDto.rejection_reason || 'No reason provided'}`,
+                notification_type: 'PHOTO_REJECTED',
+                reference_type: 'PHOTO',
+                reference_id: savedPhoto.id,
+                created_by_id: userId,
+            });
+        }
+
+        return savedPhoto;
     }
 
     async findPhotosByAoiAndEditor(aoiId: string, editorId: string): Promise<Photo[]> {
@@ -303,6 +319,28 @@ export class MediaService {
                 this.logger.log(`[FORM] Linked workflow ${savedPoiForm.id} to photo ${photo.id} and set status to FORM_SUBMITTED`);
             }
 
+            // Notify Manager/Editor if AOI is assigned
+            if (aoiId) {
+                const aoi = await manager.findOne(AoiArea, { where: { id: aoiId } });
+                console.log(`[MediaService] Form submitted for AOI ${aoi?.aoi_code}. assigned_by: ${aoi?.assigned_by_surveyor_id}, created_by: ${aoi?.created_by_id}`);
+
+                // Target recipient: The user who assigned this AOI to the surveyor, or the creator if not explicitly assigned
+                const recipientId = aoi?.assigned_by_surveyor_id || aoi?.created_by_id;
+
+                if (recipientId) {
+                    console.log(`[MediaService] Triggering notification for recipient ${recipientId}`);
+                    await this.notificationsService.createNotification({
+                        user_id: recipientId,
+                        title: 'New Survey Submitted',
+                        message: `Surveyor ${userId} has submitted a survey for AOI ${aoi?.aoi_code || 'N/A'}.`,
+                        notification_type: 'SURVEY_SUBMISSION',
+                        reference_type: 'POI_FORM',
+                        reference_id: savedPoiForm.id,
+                        created_by_id: userId,
+                    });
+                }
+            }
+
             return savedPoiForm;
         });
     }
@@ -331,6 +369,20 @@ export class MediaService {
             poiForm.review_notes = updateDto.rejection_reason || '';
         }
 
-        return this.poiFormRepository.save(poiForm);
+        const savedForm = await this.poiFormRepository.save(poiForm);
+
+        // Notify Surveyor of result
+        console.log(`[MediaService] Form ${id} updated to ${updateDto.status}. Notifying surveyor ${savedForm.submitted_by_id}`);
+        await this.notificationsService.createNotification({
+            user_id: savedForm.submitted_by_id,
+            title: `Survey ${updateDto.status === 'APPROVED' ? 'Approved' : 'Rejected'}`,
+            message: `Your survey for AOI has been ${updateDto.status.toLowerCase()}. ${updateDto.status === 'REJECTED' ? 'Reason: ' + updateDto.rejection_reason : ''}`,
+            notification_type: 'REVIEW_RESULT',
+            reference_type: 'POI_FORM',
+            reference_id: savedForm.id,
+            created_by_id: userId,
+        });
+
+        return savedForm;
     }
 }

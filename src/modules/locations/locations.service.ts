@@ -4,6 +4,7 @@ import { Repository, Not, IsNull } from 'typeorm';
 import { AoiArea } from './entities/aoi-area.entity';
 import { Photo } from '../media/entities/photo.entity';
 import { CreateAoiDto, UpdateAoiDto, AssignAoiDto, BulkAssignAoiDto } from './dto/aoi.dto';
+import { NotificationsService } from '../system/services/notifications.service';
 
 @Injectable()
 export class LocationsService {
@@ -14,6 +15,7 @@ export class LocationsService {
         private aoiRepository: Repository<AoiArea>,
         @InjectRepository(Photo)
         private photoRepository: Repository<Photo>,
+        private notificationsService: NotificationsService,
     ) { }
 
     // --- AOI Operations ---
@@ -124,7 +126,21 @@ export class LocationsService {
             );
         }
 
-        return this.aoiRepository.save(aoi);
+        const savedAoi = await this.aoiRepository.save(aoi);
+
+        if (assignDto.surveyor_id) {
+            await this.notificationsService.createNotification({
+                user_id: assignDto.surveyor_id,
+                title: 'New AOI Assigned',
+                message: `AOI ${savedAoi.aoi_code} has been assigned to you.`,
+                notification_type: 'AOI_ASSIGNED',
+                reference_type: 'AOI',
+                reference_id: savedAoi.id,
+                created_by_id: assignedBy,
+            });
+        }
+
+        return savedAoi;
     }
 
     async bulkAssignAoi(bulkDto: BulkAssignAoiDto, assignedBy: string): Promise<void> {
@@ -157,7 +173,19 @@ export class LocationsService {
                 );
             }
 
-            await this.aoiRepository.save(aoi);
+            const savedAoi = await this.aoiRepository.save(aoi);
+
+            if (surveyor_id) {
+                await this.notificationsService.createNotification({
+                    user_id: surveyor_id,
+                    title: 'New AOI Assigned (Bulk)',
+                    message: `AOI ${savedAoi.aoi_code} has been assigned to you via bulk assignment.`,
+                    notification_type: 'AOI_ASSIGNED',
+                    reference_type: 'AOI',
+                    reference_id: savedAoi.id,
+                    created_by_id: assignedBy,
+                });
+            }
         }
     }
 

@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Reward } from './entities/reward.entity';
 import { CreateRewardRequestDto, UpdateRewardStatusDto } from './dto/reward.dto';
+import { NotificationsService } from '../system/services/notifications.service';
 
 @Injectable()
 export class WorkflowService {
@@ -11,6 +12,7 @@ export class WorkflowService {
     constructor(
         @InjectRepository(Reward)
         private rewardRepository: Repository<Reward>,
+        private notificationsService: NotificationsService,
     ) { }
 
     async createRewardRequest(createDto: CreateRewardRequestDto, userId: string): Promise<Reward> {
@@ -77,7 +79,20 @@ export class WorkflowService {
             reward.payment_reference = updateDto.payment_reference || '';
         }
 
-        return this.rewardRepository.save(reward);
+        const savedReward = await this.rewardRepository.save(reward);
+
+        // Notify User
+        await this.notificationsService.createNotification({
+            user_id: savedReward.user_id,
+            title: `Reward Request ${savedReward.status}`,
+            message: `Your reward request for AOI has been ${savedReward.status.toLowerCase()}. ${savedReward.review_notes ? 'Notes: ' + savedReward.review_notes : ''}`,
+            notification_type: 'REWARD_STATUS_CHANGE',
+            reference_type: 'REWARD',
+            reference_id: savedReward.id,
+            created_by_id: userId,
+        });
+
+        return savedReward;
     }
 
     async getStats(): Promise<any> {

@@ -1,18 +1,39 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ActivityLog } from '../entities/activity-log.entity';
 import { SystemSetting } from '../entities/system-setting.entity';
+import { Notification } from '../entities/notification.entity';
 import { UpdateSystemSettingDto, CreateLogDto } from '../dto/system.dto';
 
 @Injectable()
 export class SystemService {
+    private readonly logger = new Logger(SystemService.name);
+
     constructor(
         @InjectRepository(ActivityLog)
         private logsRepository: Repository<ActivityLog>,
         @InjectRepository(SystemSetting)
         private settingsRepository: Repository<SystemSetting>,
+        @InjectRepository(Notification)
+        private readonly notificationRepository: Repository<Notification>,
     ) { }
+
+    // --- Notifications ---
+    async getMyNotifications(userId: string) {
+        this.logger.log(`Fetching notifications for user ${userId}`);
+        return this.notificationRepository.find({
+            where: { user_id: userId },
+            order: { created_at: 'DESC' },
+        });
+    }
+
+    async markAsRead(notificationId: string) {
+        return this.notificationRepository.update(notificationId, {
+            is_read: true,
+            read_at: new Date(),
+        });
+    }
 
     // --- Logs ---
     async getLogs(limit: number = 50): Promise<ActivityLog[]> {

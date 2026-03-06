@@ -9,7 +9,28 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 @Controller('system')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class SystemController {
-    constructor(private readonly systemService: SystemService) { }
+    constructor(private readonly systemService: SystemService) {
+        console.log('[SystemController] Initialized');
+    }
+
+    @Get('ping')
+    ping() {
+        return { status: 'ok', message: 'System Controller is active' };
+    }
+
+    // --- Notifications ---
+    @Get('notifications/my')
+    @UseGuards(JwtAuthGuard)
+    async getMyNotifications(@Req() req: any) {
+        console.log(`[SystemController] Fetching notifications for user: ${req.user.id}`);
+        return this.systemService.getMyNotifications(req.user.id);
+    }
+
+    @Post('notifications/:id/read')
+    @UseGuards(JwtAuthGuard)
+    async markAsRead(@Param('id') id: string) {
+        return this.systemService.markAsRead(id);
+    }
 
     // --- Admin: View Logs ---
     @Get('logs')

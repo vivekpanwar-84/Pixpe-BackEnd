@@ -9,11 +9,13 @@ import { MediaService } from './media.service';
 import { PhotosController } from './photos.controller';
 import { FormsController } from './forms.controller';
 import { SupabaseService } from './supabase.service';
+import { SystemModule } from '../system/system.module';
 
 @Module({
     imports: [
         TypeOrmModule.forFeature([Photo, PoiForm, Form, AoiArea]),
         MulterModule.register({ limits: { fileSize: 10 * 1024 * 1024 } }), // 10MB max
+        SystemModule,
     ],
     controllers: [PhotosController, FormsController],
     providers: [MediaService, SupabaseService],
