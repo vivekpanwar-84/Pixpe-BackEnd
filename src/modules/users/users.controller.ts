@@ -38,6 +38,13 @@ export class UsersController {
         return this.usersService.findPendingKyc();
     }
 
+    @Get('debug-kyc')
+    @Roles(RoleSlug.MANAGER, RoleSlug.ADMIN)
+    async debugKyc() {
+        const users = await this.usersService.findPendingKyc();
+        return { count: users.length, data: users };
+    }
+
     // --- 4. User: View Own Profile ---
     @Get('profile')
     async getProfile(@Req() req: any) {

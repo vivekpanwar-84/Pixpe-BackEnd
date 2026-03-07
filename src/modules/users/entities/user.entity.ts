@@ -1,6 +1,7 @@
 import { Entity, Column, ManyToOne, JoinColumn, OneToOne } from 'typeorm';
 import { BaseEntity } from '../../../common/entities/base.entity';
 import { Role } from '../../roles/entities/role.entity';
+import { KycDocument } from './kyc-document.entity';
 
 export enum KycStatus {
     PENDING = 'PENDING',
@@ -89,4 +90,7 @@ export class User extends BaseEntity {
 
     @Column({ type: 'timestamptz', nullable: true })
     last_login_at: Date;
+
+    @OneToOne(() => KycDocument, (doc) => doc.user)
+    kyc_document: KycDocument;
 }

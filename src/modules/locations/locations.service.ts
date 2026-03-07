@@ -129,10 +129,24 @@ export class LocationsService {
         const savedAoi = await this.aoiRepository.save(aoi);
 
         if (assignDto.surveyor_id) {
+            this.logger.log(`[LocationsService] Creating notification for surveyor: ${assignDto.surveyor_id}`);
             await this.notificationsService.createNotification({
                 user_id: assignDto.surveyor_id,
                 title: 'New AOI Assigned',
-                message: `AOI ${savedAoi.aoi_code} has been assigned to you.`,
+                message: `AOI ${savedAoi.aoi_code} has been assigned to you for survey.`,
+                notification_type: 'AOI_ASSIGNED',
+                reference_type: 'AOI',
+                reference_id: savedAoi.id,
+                created_by_id: assignedBy,
+            });
+        }
+
+        if (assignDto.editor_id) {
+            this.logger.log(`[LocationsService] Creating notification for editor: ${assignDto.editor_id}`);
+            await this.notificationsService.createNotification({
+                user_id: assignDto.editor_id,
+                title: 'New AOI Assigned for Review',
+                message: `AOI ${savedAoi.aoi_code} has been assigned to you for review.`,
                 notification_type: 'AOI_ASSIGNED',
                 reference_type: 'AOI',
                 reference_id: savedAoi.id,
@@ -176,10 +190,24 @@ export class LocationsService {
             const savedAoi = await this.aoiRepository.save(aoi);
 
             if (surveyor_id) {
+                this.logger.log(`[LocationsService-Bulk] Creating notification for surveyor: ${surveyor_id}`);
                 await this.notificationsService.createNotification({
                     user_id: surveyor_id,
                     title: 'New AOI Assigned (Bulk)',
-                    message: `AOI ${savedAoi.aoi_code} has been assigned to you via bulk assignment.`,
+                    message: `AOI ${savedAoi.aoi_code} has been assigned to you via bulk assignment for survey.`,
+                    notification_type: 'AOI_ASSIGNED',
+                    reference_type: 'AOI',
+                    reference_id: savedAoi.id,
+                    created_by_id: assignedBy,
+                });
+            }
+
+            if (editor_id) {
+                this.logger.log(`[LocationsService-Bulk] Creating notification for editor: ${editor_id}`);
+                await this.notificationsService.createNotification({
+                    user_id: editor_id,
+                    title: 'New AOI Assigned (Bulk)',
+                    message: `AOI ${savedAoi.aoi_code} has been assigned to you via bulk assignment for review.`,
                     notification_type: 'AOI_ASSIGNED',
                     reference_type: 'AOI',
                     reference_id: savedAoi.id,
@@ -220,12 +248,33 @@ export class LocationsService {
 
     async updateAoiStatus(id: string, status: string, userId: string): Promise<AoiArea> {
         const aoi = await this.findOneAoi(id);
+        const oldStatus = aoi.status;
         aoi.status = status;
-        if (status === 'SUBMITTED') aoi.submitted_at = new Date();
+
+        if (status === 'SUBMITTED') {
+            aoi.submitted_at = new Date();
+
+            // Notify Manager/Admin who assigned this or created it
+            const managerId = aoi.assigned_by_surveyor_id || aoi.created_by_id;
+            if (managerId) {
+                this.logger.log(`[LocationsService] Notifying manager ${managerId} about AOI submission: ${aoi.aoi_code}`);
+                await this.notificationsService.createNotification({
+                    user_id: managerId,
+                    title: 'AOI Submitted',
+                    message: `Surveyor has submitted AOI ${aoi.aoi_code} for review.`,
+                    notification_type: 'AOI_SUBMITTED',
+                    reference_type: 'AOI',
+                    reference_id: aoi.id,
+                    created_by_id: userId, // The surveyor who submitted
+                });
+            }
+        }
+
         if (status === 'CLOSED') {
             aoi.closed_at = new Date();
             aoi.closed_by_id = userId;
         }
+
         return this.aoiRepository.save(aoi);
     }
 }

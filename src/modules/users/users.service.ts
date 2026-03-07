@@ -71,10 +71,12 @@ export class UsersService {
     }
 
     async findPendingKyc(): Promise<User[]> {
-        return this.usersRepository.find({
+        const users = await this.usersRepository.find({
             where: { kyc_status: KycStatus.SUBMITTED, is_deleted: false },
-            relations: ['role'],
+            relations: ['role', 'kyc_document'],
         });
+        console.log(`[DEBUG] findPendingKyc: found ${users.length} users. First user kyc_document:`, users[0]?.kyc_document ? 'PRESENT' : 'MISSING');
+        return users;
     }
 
     async findOne(id: string): Promise<User> {

@@ -7,7 +7,7 @@ export class KycDocument extends BaseEntity {
     @Column({ type: 'uuid' })
     user_id: string;
 
-    @OneToOne(() => User)
+    @OneToOne(() => User, (user) => user.kyc_document)
     @JoinColumn({ name: 'user_id' })
     user: User;
 

@@ -13,7 +13,8 @@ import { Server, Socket } from 'socket.io';
     cors: {
         origin: '*',
     },
-    namespace: 'notifications',
+    namespace: '/notifications',
+    transports: ['polling', 'websocket'],
 })
 export class NotificationsGateway
     implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
@@ -45,7 +46,8 @@ export class NotificationsGateway
 
     sendNotificationToUser(userId: string, data: any) {
         const room = `user_${userId}`;
-        this.logger.log(`Emitting notification to room: ${room}`);
+        this.logger.log(`[NotificationsGateway] Emitting notification to room: ${room}`);
         this.server.to(room).emit('notification', data);
+        this.logger.log(`[NotificationsGateway] Emission complete for room: ${room}`);
     }
 }

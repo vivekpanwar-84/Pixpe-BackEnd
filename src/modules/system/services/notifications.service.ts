@@ -30,9 +30,11 @@ export class NotificationsService {
         });
 
         const savedNotification = await this.notificationRepository.save(notification);
-        console.log(`[NotificationsService] Notification saved with ID: ${savedNotification.id}`);
+        console.log(`[NotificationsService] Notification saved with ID: ${savedNotification.id} for user: ${data.user_id}`);
+        console.log(`[NotificationsService] Data: ${JSON.stringify({ title: data.title, type: data.notification_type })}`);
 
         // Send real-time notification
+        console.log(`[NotificationsService] Handing off to gateway for user: ${data.user_id}`);
         this.notificationsGateway.sendNotificationToUser(data.user_id, savedNotification);
 
         return savedNotification;
