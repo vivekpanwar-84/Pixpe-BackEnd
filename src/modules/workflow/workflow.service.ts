@@ -4,6 +4,8 @@ import { Repository } from 'typeorm';
 import { Reward } from './entities/reward.entity';
 import { CreateRewardRequestDto, UpdateRewardStatusDto } from './dto/reward.dto';
 import { NotificationsService } from '../system/services/notifications.service';
+import { AoiArea } from '../locations/entities/aoi-area.entity';
+import { Photo } from '../media/entities/photo.entity';
 
 @Injectable()
 export class WorkflowService {
@@ -12,6 +14,10 @@ export class WorkflowService {
     constructor(
         @InjectRepository(Reward)
         private rewardRepository: Repository<Reward>,
+        @InjectRepository(AoiArea)
+        private aoiRepository: Repository<AoiArea>,
+        @InjectRepository(Photo)
+        private photoRepository: Repository<Photo>,
         private notificationsService: NotificationsService,
     ) { }
 
@@ -34,19 +40,37 @@ export class WorkflowService {
     }
 
     async findMyRewards(userId: string): Promise<Reward[]> {
-        return this.rewardRepository.find({
-            where: { user_id: userId },
-            order: { requested_at: 'DESC' }
-        });
+        return this.rewardRepository.createQueryBuilder('reward')
+            .leftJoinAndSelect('reward.aoi', 'aoi')
+            .where('reward.user_id = :userId', { userId })
+            .orderBy('reward.requested_at', 'DESC')
+            .getMany();
     }
 
     async findAllRewards(status?: string): Promise<Reward[]> {
-        const where = status ? { status } : {};
-        return this.rewardRepository.find({
-            where,
-            relations: ['user', 'aoi'],
-            order: { requested_at: 'DESC' }
-        });
+        const query = this.rewardRepository.createQueryBuilder('reward')
+            .leftJoinAndSelect('reward.aoi', 'aoi')
+            .orderBy('reward.requested_at', 'DESC');
+
+        if (status) {
+            query.where('reward.status = :status', { status });
+        }
+
+        return query.getMany();
+    }
+
+    async getMyPixpoints(userId: string): Promise<{ total_pixpoints: string }> {
+        const result = await this.rewardRepository
+            .createQueryBuilder('reward')
+            .select('SUM(reward.reward_amount)', 'total_reward')
+            .where('reward.user_id = :userId', { userId })
+            .andWhere('reward.status IN (:...statuses)', { statuses: ['APPROVED', 'PAID'] })
+            .getRawOne();
+
+        const total = Number(result.total_reward || 0);
+        return {
+            total_pixpoints: total.toFixed(2)
+        };
     }
 
     async updateRewardStatus(id: string, updateDto: UpdateRewardStatusDto, userId: string): Promise<Reward> {
@@ -106,5 +130,41 @@ export class WorkflowService {
             total_paid: totalRewards?.sum || 0,
             pending_requests: await this.rewardRepository.count({ where: { status: 'PENDING' } }),
         };
+    }
+
+    async findSubmittableAois(userId: string): Promise<any[]> {
+        const aois = await this.aoiRepository.find({
+            where: {
+                assigned_to_surveyor_id: userId,
+                status: 'SUBMITTED' // Only AOIs submitted by surveyor
+            }
+        });
+
+        const results = [];
+        for (const aoi of aois) {
+            const totalSubmitted = await this.photoRepository.count({
+                where: { aoi_id: aoi.id }
+            });
+            const totalApproved = await this.photoRepository.count({
+                where: { aoi_id: aoi.id, status: 'APPROVED' }
+            });
+
+            // Check if a reward request already exists for this AOI and is not REJECTED
+            const existingRequest = await this.rewardRepository.findOne({
+                where: { aoi_id: aoi.id, user_id: userId }
+            });
+
+            if (!existingRequest || existingRequest.status === 'REJECTED') {
+                results.push({
+                    aoi_id: aoi.id,
+                    aoi_name: aoi.aoi_name,
+                    aoi_code: aoi.aoi_code,
+                    total_photos_submitted: totalSubmitted,
+                    total_photos_approved: totalApproved,
+                });
+            }
+        }
+
+        return results;
     }
 }

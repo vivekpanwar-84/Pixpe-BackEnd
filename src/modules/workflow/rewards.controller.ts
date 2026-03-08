@@ -25,6 +25,18 @@ export class RewardsController {
         return this.workflowService.findMyRewards(req.user.id);
     }
 
+    @Get('submittable-aois')
+    @Roles(RoleSlug.SURVEYOR)
+    findSubmittableAois(@Req() req: any) {
+        return this.workflowService.findSubmittableAois(req.user.id);
+    }
+
+    @Get('balance')
+    @Roles(RoleSlug.SURVEYOR)
+    getMyBalance(@Req() req: any) {
+        return this.workflowService.getMyPixpoints(req.user.id);
+    }
+
     // --- Manager/Admin: View All Requests ---
     @Get()
     @Roles(RoleSlug.MANAGER, RoleSlug.ADMIN)
