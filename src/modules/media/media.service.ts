@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, InternalServerErrorException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, InternalServerErrorException, Logger, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Photo } from './entities/photo.entity';
@@ -6,7 +6,7 @@ import { PoiForm } from '../workflow/entities/poi-form.entity';
 import { Form } from '../workflow/entities/form.entity';
 import { AoiArea } from '../locations/entities/aoi-area.entity';
 import { UploadPhotoDto, UpdatePhotoStatusDto } from './dto/photo.dto';
-import { CreateFormDto, UpdateFormStatusDto } from './dto/form.dto';
+import { CreateFormDto, UpdateFormStatusDto, CheckDuplicateDto } from './dto/form.dto';
 import { SupabaseService } from './supabase.service';
 import { NotificationsService } from '../system/services/notifications.service';
 
@@ -225,15 +225,41 @@ export class MediaService {
     // --- Form Operations ---
 
     async createForm(createFormDto: CreateFormDto, userId: string): Promise<PoiForm> {
+        let aoiId = null;
+        if (createFormDto.linked_photo_id) {
+            const photo = await this.photoRepository.findOne({ where: { id: createFormDto.linked_photo_id } });
+            if (photo) {
+                aoiId = photo.aoi_id;
+                this.logger.log(`[CREATE-FORM] Resolving AOI ID ${aoiId} from photo ${createFormDto.linked_photo_id}`);
+            }
+        }
+
+        // Check if we are updating an existing form for this photo
+        const existingPoiForm = await this.poiFormRepository.findOne({
+            where: { photo_id: createFormDto.linked_photo_id }
+        });
+
+        // --- PRE-SUBMISSION DUPLICATE CHECK ---
+        const duplicates = await this.checkDuplicateForm({
+            aoi_id: aoiId || '',
+            business_name: createFormDto.business_name,
+            phone: createFormDto.phone,
+            latitude: createFormDto.latitude,
+            longitude: createFormDto.longitude,
+            exclude_form_id: existingPoiForm?.form_id
+        });
+
+        if (duplicates.length > 0) {
+            const names = duplicates.map(d => d.business_name).join(', ');
+            this.logger.warn(`[CREATE-FORM] Duplicate detected! Names: ${names}`);
+            throw new BadRequestException(`Potential duplicate entry detected: ${names}. Please resolve the conflict before submitting.`);
+        }
+
         return this.dataSource.transaction(async (manager) => {
-            let aoiId = null;
             let photo = null;
 
             if (createFormDto.linked_photo_id) {
                 photo = await manager.findOne(Photo, { where: { id: createFormDto.linked_photo_id } });
-                if (photo) {
-                    aoiId = photo.aoi_id;
-                }
             }
 
             // 1. Check if a PoiForm already exists for this photo
@@ -384,5 +410,69 @@ export class MediaService {
         });
 
         return savedForm;
+    }
+
+    async checkDuplicateForm(dto: CheckDuplicateDto): Promise<Form[]> {
+        const { aoi_id, business_name, phone, latitude, longitude, exclude_form_id } = dto;
+        this.logger.log(`[DUPLICATE-CHECK] Params: aoi=${aoi_id}, name=${business_name}, phone=${phone}, lat=${latitude}, lng=${longitude}, exclude=${exclude_form_id}`);
+
+        const query = this.formRepository.createQueryBuilder('form')
+            .innerJoin(PoiForm, 'pf', 'pf.form_id = form.id')
+            .where('pf.aoi_id = :aoi_id', { aoi_id })
+            .andWhere('form.status = :status', { status: 'ACTIVE' });
+
+        if (exclude_form_id) {
+            query.andWhere('form.id != :exclude_form_id', { exclude_form_id });
+        }
+
+        this.logger.log(`[DUPLICATE-CHECK] Base query restricted to AOI: ${aoi_id} and status: ACTIVE`);
+
+        const conditions: string[] = [];
+        const params: any = {};
+
+        // 1. Business Name Match (Fuzzy)
+        if (business_name) {
+            conditions.push('LOWER(form.business_name) LIKE :name');
+            params.name = `%${business_name.toLowerCase()}%`;
+        }
+
+        // 2. Phone Match (Last 10 digits)
+        if (phone) {
+            const cleanPhone = phone.replace(/\D/g, '').slice(-10);
+            if (cleanPhone.length >= 8) { // Minimum length to be meaningful
+                conditions.push('form.phone LIKE :phone');
+                params.phone = `%${cleanPhone}`;
+            }
+        }
+
+        // 3. Proximity Check (approx 15m)
+        const latNum = Number(latitude);
+        const lngNum = Number(longitude);
+
+        if (!Number.isNaN(latNum) && !Number.isNaN(lngNum) && Number.isFinite(latNum) && Number.isFinite(lngNum)) {
+            this.logger.log(`[DUPLICATE-CHECK] Adding proximity check for ${latNum}, ${lngNum}`);
+            const threshold = 0.00015; // Approx 15m
+            conditions.push('form.latitude BETWEEN :latMin AND :latMax');
+            conditions.push('form.longitude BETWEEN :lngMin AND :lngMax');
+            params.latMin = latNum - threshold;
+            params.latMax = latNum + threshold;
+            params.lngMin = lngNum - threshold;
+            params.lngMax = lngNum + threshold;
+        } else {
+            this.logger.warn(`[DUPLICATE-CHECK] Skipping proximity check due to invalid coordinates: lat=${latitude}, lng=${longitude}`);
+        }
+
+        if (conditions.length === 0) {
+            this.logger.warn('[DUPLICATE-CHECK] No valid search criteria provided!');
+            return [];
+        }
+
+        // We want to find if ANY of these criteria match (OR logic for the suspicious fields)
+        // But capped at the same AOI and ACTIVE status (AND logic for scope)
+        query.andWhere(`(${conditions.join(' OR ')})`, params);
+
+        const results = await query.getMany();
+        this.logger.log(`[DUPLICATE-CHECK] Found ${results.length} potential duplicates`);
+        return results;
     }
 }

@@ -18,15 +18,15 @@ export class CreateAoiDto {
     center_longitude: number;
 
     @IsString()
-    @IsOptional()
+    @IsNotEmpty()
     city?: string;
 
     @IsString()
-    @IsOptional()
+    @IsNotEmpty()
     state?: string;
 
     @IsString()
-    @IsOptional()
+    @IsNotEmpty()
     pin_code?: string;
 
     @IsString()

@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, Req, UnauthorizedException } from '@nestjs/common';
 import { MediaService } from './media.service';
-import { CreateFormDto, UpdateFormStatusDto } from './dto/form.dto';
+import { CreateFormDto, UpdateFormStatusDto, CheckDuplicateDto } from './dto/form.dto';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { RoleSlug } from '../../common/constants/roles.enum';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -16,6 +16,12 @@ export class FormsController {
     @Roles(RoleSlug.EDITOR)
     create(@Body() createFormDto: CreateFormDto, @Req() req: any) {
         return this.mediaService.createForm(createFormDto, req.user.id);
+    }
+
+    @Post('check-duplicate')
+    @Roles(RoleSlug.EDITOR)
+    checkDuplicate(@Body() checkDto: CheckDuplicateDto) {
+        return this.mediaService.checkDuplicateForm(checkDto);
     }
 
     // --- Verified: Manager/Editor View All Forms ---

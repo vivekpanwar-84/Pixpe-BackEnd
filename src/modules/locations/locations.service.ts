@@ -1,10 +1,13 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Not, IsNull } from 'typeorm';
 import { AoiArea } from './entities/aoi-area.entity';
 import { Photo } from '../media/entities/photo.entity';
 import { CreateAoiDto, UpdateAoiDto, AssignAoiDto, BulkAssignAoiDto } from './dto/aoi.dto';
 import { NotificationsService } from '../system/services/notifications.service';
+import { Readable } from 'stream';
+import csv from 'csv-parser';
+import * as fs from 'fs';
 
 @Injectable()
 export class LocationsService {
@@ -32,6 +35,84 @@ export class LocationsService {
             status: 'DRAFT',
         });
         return this.aoiRepository.save(aoi);
+    }
+
+    async createBulkAoiFromCsv(file: Express.Multer.File, createdBy: string): Promise<any> {
+        const results: any[] = [];
+        const stream = Readable.from(file.buffer);
+
+        return new Promise((resolve, reject) => {
+            stream
+                .pipe(csv())
+                .on('data', (data: any) => results.push(data))
+                .on('end', async () => {
+                    const createdAois: AoiArea[] = [];
+                    const errors: any[] = [];
+
+                    for (const [index, row] of results.entries()) {
+                        try {
+                            const {
+                                aoi_name,
+                                center_latitude,
+                                center_longitude,
+                                boundary_geojson, // This is a file path
+                                city,
+                                state,
+                                pin_code,
+                                priority,
+                                deadline
+                            } = row;
+
+                            if (!aoi_name || !center_latitude || !center_longitude || !boundary_geojson || !city || !state || !pin_code) {
+                                throw new Error(`Missing required fields in row ${index + 1}`);
+                            }
+
+                            // Read GeoJSON from file path
+                            let geojsonContent: object;
+                            try {
+                                const rawGeojson = fs.readFileSync(boundary_geojson.trim(), 'utf8');
+                                geojsonContent = JSON.parse(rawGeojson);
+                            } catch (err) {
+                                throw new Error(`Failed to read or parse GeoJSON file at ${boundary_geojson} in row ${index + 1}: ${err.message}`);
+                            }
+
+                            const aoiCount = await this.aoiRepository.count();
+                            const aoiCode = `AOI-${new Date().getFullYear()}-${1000 + aoiCount + 1}`;
+
+                            const aoi = this.aoiRepository.create({
+                                aoi_name,
+                                center_latitude: parseFloat(center_latitude),
+                                center_longitude: parseFloat(center_longitude),
+                                boundary_geojson: geojsonContent,
+                                city,
+                                state,
+                                pin_code,
+                                priority: priority || 'MEDIUM',
+                                deadline: deadline ? new Date(deadline) : undefined,
+                                aoi_code: aoiCode,
+                                created_by_id: createdBy,
+                                status: 'DRAFT',
+                            });
+
+                            const savedAoi = await this.aoiRepository.save(aoi);
+                            createdAois.push(savedAoi);
+                        } catch (err) {
+                            this.logger.error(`Error processing CSV row ${index + 1}: ${err.message}`);
+                            errors.push({ row: index + 1, message: err.message });
+                        }
+                    }
+
+                    resolve({
+                        successCount: createdAois.length,
+                        errorCount: errors.length,
+                        errors,
+                        createdAois: createdAois.map((a: AoiArea) => a.aoi_code)
+                    });
+                })
+                .on('error', (error: any) => {
+                    reject(new BadRequestException(`Failed to parse CSV: ${error.message}`));
+                });
+        });
     }
 
     async findAllAoi(role?: string, userId?: string, hasForms?: boolean, unassignedOnly?: boolean): Promise<AoiArea[]> {

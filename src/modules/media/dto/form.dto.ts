@@ -116,6 +116,30 @@ export class CreateFormDto {
     is_gps_adjusted?: boolean;
 }
 
+export class CheckDuplicateDto {
+    @IsUUID()
+    @IsNotEmpty()
+    aoi_id: string;
+
+    @IsString()
+    @IsNotEmpty()
+    business_name: string;
+
+    @IsString()
+    @IsOptional()
+    phone?: string;
+
+    @IsOptional()
+    latitude?: number;
+
+    @IsOptional()
+    longitude?: number;
+
+    @IsUUID()
+    @IsOptional()
+    exclude_form_id?: string;
+}
+
 export class UpdateFormStatusDto {
     @IsString()
     @IsNotEmpty()

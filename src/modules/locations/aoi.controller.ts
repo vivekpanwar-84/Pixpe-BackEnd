@@ -1,4 +1,6 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, Req, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, Req, UnauthorizedException, BadRequestException, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 import { LocationsService } from './locations.service';
 import { CreateAoiDto, UpdateAoiDto, AssignAoiDto, BulkAssignAoiDto } from './dto/aoi.dto';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -16,6 +18,19 @@ export class AoiController {
     @Roles(RoleSlug.ADMIN, RoleSlug.MANAGER)
     create(@Body() createAoiDto: CreateAoiDto, @Req() req: any) {
         return this.locationsService.createAoi(createAoiDto, req.user.id);
+    }
+
+    @Post('bulk')
+    @Roles(RoleSlug.ADMIN, RoleSlug.MANAGER)
+    @UseInterceptors(FileInterceptor('file', { storage: memoryStorage() }))
+    bulkCreate(
+        @UploadedFile() file: Express.Multer.File,
+        @Req() req: any,
+    ) {
+        if (!file) {
+            throw new BadRequestException('CSV file is required. Send as form-data with key "file".');
+        }
+        return this.locationsService.createBulkAoiFromCsv(file, req.user.id);
     }
 
     // --- Verified: View All AOIs (Admin/Manager) ---
