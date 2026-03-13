@@ -36,17 +36,36 @@ export class AoiController {
     // --- Verified: View All AOIs (Admin/Manager) ---
     @Get()
     @Roles(RoleSlug.ADMIN, RoleSlug.MANAGER, RoleSlug.SURVEYOR)
-    findAll(@Query('unassigned') unassigned?: string) {
-        return this.locationsService.findAllAoi(undefined, undefined, false, unassigned === 'true');
+    findAll(
+        @Query('unassigned') unassigned?: string,
+        @Query('page') page?: string,
+        @Query('limit') limit?: string,
+        @Query('search') search?: string,
+    ) {
+        return this.locationsService.findAllAoi(
+            undefined, undefined, false, unassigned === 'true',
+            page ? parseInt(page, 10) : 1,
+            limit ? parseInt(limit, 10) : 20,
+            search
+        );
     }
 
     // --- Verified: View Assigned AOIs (Surveyor/Editor) ---
     @Get('assigned')
     @Roles(RoleSlug.SURVEYOR, RoleSlug.EDITOR)
-    findAssigned(@Req() req: any, @Query('hasForms') hasForms?: string) {
-        // Ideally role is derived from token
-        // passing user ID to filter
-        return this.locationsService.findAllAoi(req.user.role, req.user.id, hasForms === 'true');
+    findAssigned(
+        @Req() req: any,
+        @Query('hasForms') hasForms?: string,
+        @Query('page') page?: string,
+        @Query('limit') limit?: string,
+        @Query('search') search?: string,
+    ) {
+        return this.locationsService.findAllAoi(
+            req.user.role, req.user.id, hasForms === 'true', false,
+            page ? parseInt(page, 10) : 1,
+            limit ? parseInt(limit, 10) : 20,
+            search
+        );
     }
 
     @Get('assigned/:id')

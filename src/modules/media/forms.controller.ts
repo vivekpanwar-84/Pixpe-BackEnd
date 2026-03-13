@@ -31,9 +31,17 @@ export class FormsController {
         @Query('status') status?: string,
         @Query('photo_id') photo_id?: string,
         @Query('aoi_id') aoi_id?: string,
-        @Query('submitted_by') submitted_by?: string
+        @Query('submitted_by') submitted_by?: string,
+        @Query('page') page?: string,
+        @Query('limit') limit?: string,
+        @Query('search') search?: string,
     ) {
-        return this.mediaService.findAllForms(status, photo_id, aoi_id, submitted_by);
+        return this.mediaService.findAllForms(
+            status, photo_id, aoi_id, submitted_by,
+            page ? parseInt(page, 10) : 1,
+            limit ? parseInt(limit, 10) : 20,
+            search
+        );
     }
 
     // --- Verified: Manager Approve/Reject Form ---

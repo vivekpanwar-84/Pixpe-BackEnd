@@ -144,11 +144,33 @@ export class MediaService {
         return photo;
     }
 
-    async findAllPhotos(status?: string, aoiId?: string): Promise<Photo[]> {
-        const where: any = {};
-        if (status) where.status = status;
-        if (aoiId) where.aoi_id = aoiId;
-        return this.photoRepository.find({ where, relations: ['uploaded_by', 'form', 'form.form'], order: { created_at: 'DESC' } });
+    async findAllPhotos(status?: string, aoiId?: string, page: number = 1, limit: number = 20, search?: string): Promise<{ data: Photo[], total: number, page: number, limit: number }> {
+        const query = this.photoRepository.createQueryBuilder('photo')
+            .leftJoinAndSelect('photo.uploaded_by', 'uploaded_by')
+            .leftJoinAndSelect('photo.form', 'form')
+            .leftJoinAndSelect('form.form', 'actual_form');
+
+        if (status) query.where('photo.status = :status', { status });
+        if (aoiId) query.andWhere('photo.aoi_id = :aoiId', { aoiId });
+        
+        if (search) {
+            query.andWhere(
+                '(LOWER(photo.photo_type) LIKE :search OR LOWER(uploaded_by.name) LIKE :search)',
+                { search: `%${search.toLowerCase()}%` }
+            );
+        }
+
+        query.orderBy('photo.created_at', 'DESC');
+        query.skip((page - 1) * limit).take(limit);
+
+        const [data, total] = await query.getManyAndCount();
+
+        return {
+            data,
+            total,
+            page,
+            limit
+        };
     }
 
     async assignPhoto(id: string, editorId: string, userId: string): Promise<Photo> {
@@ -371,17 +393,36 @@ export class MediaService {
         });
     }
 
-    async findAllForms(status?: string, photoId?: string, aoiId?: string, submittedById?: string): Promise<PoiForm[]> {
-        const where: any = {};
-        if (status) where.review_status = status;
-        if (photoId) where.photo_id = photoId;
-        if (aoiId) where.aoi_id = aoiId;
-        if (submittedById) where.submitted_by_id = submittedById;
-        return this.poiFormRepository.find({
-            where,
-            relations: ['submitted_by', 'photo', 'aoi', 'form'],
-            order: { created_at: 'DESC' }
-        });
+    async findAllForms(status?: string, photoId?: string, aoiId?: string, submittedById?: string, page: number = 1, limit: number = 20, search?: string): Promise<{ data: PoiForm[], total: number, page: number, limit: number }> {
+        const query = this.poiFormRepository.createQueryBuilder('poiForm')
+            .leftJoinAndSelect('poiForm.submitted_by', 'submitted_by')
+            .leftJoinAndSelect('poiForm.photo', 'photo')
+            .leftJoinAndSelect('poiForm.aoi', 'aoi')
+            .leftJoinAndSelect('poiForm.form', 'form');
+
+        if (status) query.where('poiForm.review_status = :status', { status });
+        if (photoId) query.andWhere('poiForm.photo_id = :photoId', { photoId });
+        if (aoiId) query.andWhere('poiForm.aoi_id = :aoiId', { aoiId });
+        if (submittedById) query.andWhere('poiForm.submitted_by_id = :submittedById', { submittedById });
+        
+        if (search) {
+            query.andWhere(
+                '(LOWER(form.business_name) LIKE :search OR LOWER(form.business_category) LIKE :search OR LOWER(form.city) LIKE :search)',
+                { search: `%${search.toLowerCase()}%` }
+            );
+        }
+
+        query.orderBy('poiForm.created_at', 'DESC');
+        query.skip((page - 1) * limit).take(limit);
+
+        const [data, total] = await query.getManyAndCount();
+
+        return {
+            data,
+            total,
+            page,
+            limit
+        };
     }
 
     async updateFormStatus(id: string, updateDto: UpdateFormStatusDto, userId: string): Promise<PoiForm> {
@@ -431,14 +472,14 @@ export class MediaService {
         const params: any = {};
 
         // 1. Business Name Match (Fuzzy)
-        if (business_name) {
+        if (business_name && business_name.toLowerCase() !== 'not provided') {
             conditions.push('LOWER(form.business_name) LIKE :name');
             params.name = `%${business_name.toLowerCase()}%`;
         }
 
         // 2. Phone Match (Last 10 digits)
-        if (phone) {
-            const cleanPhone = phone.replace(/\D/g, '').slice(-10);
+        if (phone && phone.toLowerCase() !== 'not provided') {
+            const cleanPhone = phone.replace(/\\D/g, '').slice(-10);
             if (cleanPhone.length >= 8) { // Minimum length to be meaningful
                 conditions.push('form.phone LIKE :phone');
                 params.phone = `%${cleanPhone}`;
@@ -452,8 +493,9 @@ export class MediaService {
         if (!Number.isNaN(latNum) && !Number.isNaN(lngNum) && Number.isFinite(latNum) && Number.isFinite(lngNum)) {
             this.logger.log(`[DUPLICATE-CHECK] Adding proximity check for ${latNum}, ${lngNum}`);
             const threshold = 0.00015; // Approx 15m
-            conditions.push('form.latitude BETWEEN :latMin AND :latMax');
-            conditions.push('form.longitude BETWEEN :lngMin AND :lngMax');
+            // Postgres stores decimal but typeorm might pass them as strings causing issues.
+            // Using explicit CAST to NUMERIC comparing against the parameter
+            conditions.push('(CAST(form.latitude AS NUMERIC) BETWEEN :latMin AND :latMax AND CAST(form.longitude AS NUMERIC) BETWEEN :lngMin AND :lngMax)');
             params.latMin = latNum - threshold;
             params.latMax = latNum + threshold;
             params.lngMin = lngNum - threshold;
@@ -467,9 +509,33 @@ export class MediaService {
             return [];
         }
 
-        // We want to find if ANY of these criteria match (OR logic for the suspicious fields)
-        // But capped at the same AOI and ACTIVE status (AND logic for scope)
-        query.andWhere(`(${conditions.join(' OR ')})`, params);
+        // We want to find if ANY of these criteria match AND the proximity matches
+        // For example, if name matches OR phone matches, AND it's in the same area.
+        // If proximity check is missing, we just rely on name/phone
+        
+        let finalCondition = '';
+        const identityConditions = [];
+        if (params.name) identityConditions.push('LOWER(form.business_name) LIKE :name');
+        if (params.phone) identityConditions.push('form.phone LIKE :phone');
+
+        if (identityConditions.length > 0 && params.latMin) {
+            // Must have matching identity AND be in same proximity
+            finalCondition = `((${identityConditions.join(' OR ')}) AND (CAST(form.latitude AS NUMERIC) BETWEEN :latMin AND :latMax AND CAST(form.longitude AS NUMERIC) BETWEEN :lngMin AND :lngMax))`;
+        } else if (identityConditions.length > 0) {
+            // Only identity checking
+            finalCondition = `(${identityConditions.join(' OR ')})`;
+        } else if (params.latMin) {
+             // If ONLY proximity is requested, we shouldn't flag it as duplicate for DIFFERENT businesses.
+             // We'll return empty instead of flagging everything nearby as a duplicate.
+             this.logger.log(`[DUPLICATE-CHECK] Only proximity check available, not enough to confirm duplicate.`);
+             return [];
+        }
+
+        if (finalCondition) {
+            query.andWhere(finalCondition, params);
+        } else {
+             return [];
+        }
 
         const results = await query.getMany();
         this.logger.log(`[DUPLICATE-CHECK] Found ${results.length} potential duplicates`);

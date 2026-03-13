@@ -60,8 +60,19 @@ export class PhotosController {
     // --- Admin/Manager: View All Photos ---
     @Get()
     @Roles(RoleSlug.ADMIN, RoleSlug.MANAGER)
-    findAll(@Query('status') status?: string, @Query('aoi_id') aoi_id?: string) {
-        return this.mediaService.findAllPhotos(status, aoi_id);
+    findAll(
+        @Query('status') status?: string, 
+        @Query('aoi_id') aoi_id?: string,
+        @Query('page') page?: string,
+        @Query('limit') limit?: string,
+        @Query('search') search?: string,
+    ) {
+        return this.mediaService.findAllPhotos(
+            status, aoi_id,
+            page ? parseInt(page, 10) : 1,
+            limit ? parseInt(limit, 10) : 20,
+            search
+        );
     }
 
     // --- Manager: Assign Photo to Editor ---

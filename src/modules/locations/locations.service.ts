@@ -7,6 +7,7 @@ import { CreateAoiDto, UpdateAoiDto, AssignAoiDto, BulkAssignAoiDto } from './dt
 import { NotificationsService } from '../system/services/notifications.service';
 import { Readable } from 'stream';
 import csv from 'csv-parser';
+import * as wellknown from 'wellknown';
 import * as fs from 'fs';
 
 @Injectable()
@@ -67,13 +68,33 @@ export class LocationsService {
                                 throw new Error(`Missing required fields in row ${index + 1}`);
                             }
 
-                            // Read GeoJSON from file path
+                            // Read GeoJSON from string or file path
                             let geojsonContent: object;
-                            try {
-                                const rawGeojson = fs.readFileSync(boundary_geojson.trim(), 'utf8');
-                                geojsonContent = JSON.parse(rawGeojson);
-                            } catch (err) {
-                                throw new Error(`Failed to read or parse GeoJSON file at ${boundary_geojson} in row ${index + 1}: ${err.message}`);
+                            const boundaryStr = boundary_geojson.trim();
+
+                            if (boundaryStr.toUpperCase().startsWith('POLYGON') || boundaryStr.toUpperCase().startsWith('MULTIPOLYGON')) {
+                                try {
+                                    const parsed = wellknown.parse(boundaryStr);
+                                    if (!parsed) {
+                                        throw new Error('WKT parsing returned null');
+                                    }
+                                    geojsonContent = parsed as object;
+                                } catch (wktErr) {
+                                    throw new Error(`Failed to parse WKT string in row ${index + 1}. Error: ${wktErr.message}`);
+                                }
+                            } else {
+                                try {
+                                    // First, try to parse it as a JSON string
+                                    geojsonContent = JSON.parse(boundaryStr);
+                                } catch (parseErr) {
+                                    // If parsing fails, try to read it as a file path (fallback)
+                                    try {
+                                        const rawGeojson = fs.readFileSync(boundaryStr, 'utf8');
+                                        geojsonContent = JSON.parse(rawGeojson);
+                                    } catch (fileErr) {
+                                        throw new Error(`Failed to parse GeoJSON string or read file at ${boundary_geojson} in row ${index + 1}. Error: ${fileErr.message}`);
+                                    }
+                                }
                             }
 
                             const aoiCount = await this.aoiRepository.count();
@@ -115,7 +136,7 @@ export class LocationsService {
         });
     }
 
-    async findAllAoi(role?: string, userId?: string, hasForms?: boolean, unassignedOnly?: boolean): Promise<AoiArea[]> {
+    async findAllAoi(role?: string, userId?: string, hasForms?: boolean, unassignedOnly?: boolean, page: number = 1, limit: number = 20, search?: string): Promise<{ data: AoiArea[], total: number, page: number, limit: number }> {
         const query = this.aoiRepository.createQueryBuilder('aoi')
             .leftJoinAndSelect('aoi.assigned_to_surveyor', 'assigned_to_surveyor')
             .leftJoinAndSelect('aoi.assigned_to_editor', 'assigned_to_editor')
@@ -145,7 +166,24 @@ export class LocationsService {
             }
         }
 
-        return query.getMany();
+        if (search) {
+            query.andWhere(
+                '(LOWER(aoi.aoi_name) LIKE :search OR LOWER(aoi.aoi_code) LIKE :search OR LOWER(aoi.city) LIKE :search OR LOWER(aoi.state) LIKE :search)',
+                { search: `%${search.toLowerCase()}%` }
+            );
+        }
+
+        query.orderBy('aoi.created_at', 'DESC');
+        query.skip((page - 1) * limit).take(limit);
+
+        const [data, total] = await query.getManyAndCount();
+
+        return {
+            data,
+            total,
+            page,
+            limit
+        };
     }
 
     async findOneAoi(id: string): Promise<AoiArea> {

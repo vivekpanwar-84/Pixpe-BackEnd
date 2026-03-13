@@ -58,7 +58,7 @@ export class UsersService {
     }
 
     // --- Finders ---
-    async findAll(roleSlug?: string): Promise<User[]> {
+    async findAll(roleSlug?: string, page: number = 1, limit: number = 20, search?: string): Promise<{ data: User[], total: number, page: number, limit: number }> {
         const query = this.usersRepository.createQueryBuilder('user')
             .leftJoinAndSelect('user.role', 'role')
             .where('user.is_deleted = :isDeleted', { isDeleted: false });
@@ -67,7 +67,24 @@ export class UsersService {
             query.andWhere('role.slug = :roleSlug', { roleSlug });
         }
 
-        return query.getMany();
+        if (search) {
+            query.andWhere(
+                '(LOWER(user.name) LIKE :search OR LOWER(user.email) LIKE :search OR LOWER(user.phone) LIKE :search)',
+                { search: `%${search.toLowerCase()}%` }
+            );
+        }
+
+        query.orderBy('user.created_at', 'DESC');
+        query.skip((page - 1) * limit).take(limit);
+
+        const [data, total] = await query.getManyAndCount();
+
+        return {
+            data,
+            total,
+            page,
+            limit
+        };
     }
 
     async findPendingKyc(): Promise<User[]> {

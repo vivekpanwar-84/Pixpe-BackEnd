@@ -47,7 +47,7 @@ export class WorkflowService {
             .getMany();
     }
 
-    async findAllRewards(status?: string): Promise<Reward[]> {
+    async findAllRewards(status?: string, page: number = 1, limit: number = 20, search?: string): Promise<{ data: Reward[], total: number, page: number, limit: number }> {
         const query = this.rewardRepository.createQueryBuilder('reward')
             .leftJoinAndSelect('reward.aoi', 'aoi')
             .orderBy('reward.requested_at', 'DESC');
@@ -56,7 +56,24 @@ export class WorkflowService {
             query.where('reward.status = :status', { status });
         }
 
-        return query.getMany();
+        if (search) {
+            query.andWhere(
+                '(LOWER(aoi.aoi_name) LIKE :search OR LOWER(aoi.aoi_code) LIKE :search OR LOWER(reward.status) LIKE :search)',
+                { search: `%${search.toLowerCase()}%` }
+            );
+        }
+
+        query.orderBy('reward.requested_at', 'DESC');
+        query.skip((page - 1) * limit).take(limit);
+
+        const [data, total] = await query.getManyAndCount();
+
+        return {
+            data,
+            total,
+            page,
+            limit
+        };
     }
 
     async getMyPixpoints(userId: string): Promise<{ total_pixpoints: string }> {

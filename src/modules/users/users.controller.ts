@@ -27,8 +27,18 @@ export class UsersController {
     // --- 2. Admin/Manager: List Users ---
     @Get()
     @Roles(RoleSlug.ADMIN, RoleSlug.MANAGER)
-    findAll(@Query('role') role?: string) {
-        return this.usersService.findAll(role);
+    findAll(
+        @Query('role') role?: string,
+        @Query('page') page?: string,
+        @Query('limit') limit?: string,
+        @Query('search') search?: string,
+    ) {
+        return this.usersService.findAll(
+            role,
+            page ? parseInt(page, 10) : 1,
+            limit ? parseInt(limit, 10) : 20,
+            search
+        );
     }
 
     // --- 3. Manager: View Pending KYC ---

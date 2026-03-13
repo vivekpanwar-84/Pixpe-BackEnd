@@ -40,8 +40,18 @@ export class RewardsController {
     // --- Manager/Admin: View All Requests ---
     @Get()
     @Roles(RoleSlug.MANAGER, RoleSlug.ADMIN)
-    findAll(@Query('status') status?: string) {
-        return this.workflowService.findAllRewards(status); // Add pagination ideally
+    findAll(
+        @Query('status') status?: string,
+        @Query('page') page?: string,
+        @Query('limit') limit?: string,
+        @Query('search') search?: string,
+    ) {
+        return this.workflowService.findAllRewards(
+            status,
+            page ? parseInt(page, 10) : 1,
+            limit ? parseInt(limit, 10) : 20,
+            search
+        );
     }
 
     // --- Manager: Approve/Reject ---
