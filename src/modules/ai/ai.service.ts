@@ -43,6 +43,7 @@ Country:
 ### FORMAT END ###
 
 Ensure: 
+- **ALL OUTPUT MUST BE IN ENGLISH ONLY**: If the text in the image is in Hindi, Telugu, Tamil, Marathi, Bengali, Kannada, or any other non-English language, you MUST transliterate/translate it into English. For example, if the shop name is "राम किराना स्टोर", output "Ram Kirana Store". If the address is in Telugu script, romanize and translate it to English. NEVER output text in non-Latin scripts (Devanagari, Telugu, Tamil, etc.).
 - **STRICT LABELS**: ONLY use the labels provided above. DO NOT add any extra labels like "Owner Name:", "Basic Business Details:", or "Address:".
 - **NO SUMMARIES**: DO NOT provide descriptions, summaries, or conversational text. ONLY provide the extracted value itself.
 - **FIELD ISOLATION**: DO NOT put address details in the Phone field. DO NOT put owner names in the Business Name field unless they are part of the shop name.
