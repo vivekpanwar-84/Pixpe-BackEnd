@@ -35,3 +35,13 @@ export class AssignPhotoDto {
     @IsNotEmpty()
     editor_id: string;
 }
+
+export class BulkAssignPhotoDto {
+    @IsUUID('4', { each: true })
+    @IsNotEmpty()
+    photo_ids: string[];
+
+    @IsUUID()
+    @IsNotEmpty()
+    editor_id: string;
+}

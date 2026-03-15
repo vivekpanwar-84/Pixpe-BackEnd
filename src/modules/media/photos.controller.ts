@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, Req, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { MediaService } from './media.service';
-import { UploadPhotoDto, UpdatePhotoStatusDto, AssignPhotoDto } from './dto/photo.dto';
+import { UploadPhotoDto, UpdatePhotoStatusDto, AssignPhotoDto, BulkAssignPhotoDto } from './dto/photo.dto';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { RoleSlug } from '../../common/constants/roles.enum';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -73,6 +73,13 @@ export class PhotosController {
             limit ? parseInt(limit, 10) : 20,
             search
         );
+    }
+
+    // --- Manager: Bulk Assign Photos to Editor ---
+    @Patch('bulk-assign')
+    @Roles(RoleSlug.MANAGER, RoleSlug.ADMIN)
+    bulkAssign(@Body() bulkAssignDto: BulkAssignPhotoDto, @Req() req: any) {
+        return this.mediaService.bulkAssignPhotos(bulkAssignDto.photo_ids, bulkAssignDto.editor_id, req.user.id);
     }
 
     // --- Manager: Assign Photo to Editor ---

@@ -181,7 +181,64 @@ export class MediaService {
         photo.assigned_by_id = userId;
         photo.assigned_at = new Date();
         photo.status = 'ASSIGNED';
-        return this.photoRepository.save(photo);
+        const savedPhoto = await this.photoRepository.save(photo);
+
+        // Also assign editor to the parent AOI
+        if (photo.aoi_id) {
+            await this.aoiRepository.update(photo.aoi_id, {
+                assigned_to_editor_id: editorId,
+                assigned_by_editor_id: userId,
+                assigned_at_editor: new Date(),
+            });
+            this.logger.log(`[ASSIGN] Auto-assigned editor ${editorId} to AOI ${photo.aoi_id}`);
+        }
+
+        return savedPhoto;
+    }
+
+    async bulkAssignPhotos(photoIds: string[], editorId: string, userId: string): Promise<{ updated: number }> {
+        if (!photoIds || photoIds.length === 0) {
+            throw new BadRequestException('No photo IDs provided');
+        }
+
+        // Get unique AOI IDs from the selected photos
+        const photos = await this.photoRepository
+            .createQueryBuilder('photo')
+            .select('DISTINCT photo.aoi_id', 'aoi_id')
+            .where('photo.id IN (:...photoIds)', { photoIds })
+            .getRawMany();
+        const aoiIds = photos.map(p => p.aoi_id).filter(Boolean);
+
+        // Update photos
+        const result = await this.photoRepository
+            .createQueryBuilder()
+            .update(Photo)
+            .set({
+                assigned_to_id: editorId,
+                assigned_by_id: userId,
+                assigned_at: new Date(),
+                status: 'ASSIGNED',
+            })
+            .where('id IN (:...photoIds)', { photoIds })
+            .andWhere('status = :status', { status: 'PENDING' })
+            .execute();
+
+        // Also assign editor to all parent AOIs
+        if (aoiIds.length > 0) {
+            await this.aoiRepository
+                .createQueryBuilder()
+                .update(AoiArea)
+                .set({
+                    assigned_to_editor_id: editorId,
+                    assigned_by_editor_id: userId,
+                    assigned_at_editor: new Date(),
+                })
+                .where('id IN (:...aoiIds)', { aoiIds })
+                .execute();
+            this.logger.log(`[BULK-ASSIGN] Auto-assigned editor ${editorId} to ${aoiIds.length} AOI(s)`);
+        }
+
+        return { updated: result.affected || 0 };
     }
 
     async updatePhotoStatus(id: string, updateDto: UpdatePhotoStatusDto, userId: string): Promise<Photo> {
