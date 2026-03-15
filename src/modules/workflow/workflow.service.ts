@@ -49,11 +49,10 @@ export class WorkflowService {
 
     async findAllRewards(status?: string, page: number = 1, limit: number = 20, search?: string): Promise<{ data: Reward[], total: number, page: number, limit: number }> {
         const query = this.rewardRepository.createQueryBuilder('reward')
-            .leftJoinAndSelect('reward.aoi', 'aoi')
-            .orderBy('reward.requested_at', 'DESC');
+            .leftJoinAndSelect('reward.aoi', 'aoi');
 
         if (status) {
-            query.where('reward.status = :status', { status });
+            query.andWhere('reward.status = :status', { status });
         }
 
         if (search) {

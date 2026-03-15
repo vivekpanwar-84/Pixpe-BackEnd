@@ -25,9 +25,10 @@ export class LocationsService {
     // --- AOI Operations ---
 
     async createAoi(createAoiDto: CreateAoiDto, createdBy: string): Promise<AoiArea> {
-        // Generate AOI Code
-        const count = await this.aoiRepository.count();
-        const aoiCode = `AOI-${new Date().getFullYear()}-${1000 + count + 1}`;
+        // Generate AOI Code using timestamp + random suffix to avoid race conditions
+        const timestamp = Date.now().toString(36).toUpperCase();
+        const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
+        const aoiCode = `AOI-${new Date().getFullYear()}-${timestamp}${randomSuffix}`;
 
         const aoi = this.aoiRepository.create({
             ...createAoiDto,
@@ -97,8 +98,9 @@ export class LocationsService {
                                 }
                             }
 
-                            const aoiCount = await this.aoiRepository.count();
-                            const aoiCode = `AOI-${new Date().getFullYear()}-${1000 + aoiCount + 1}`;
+                            const timestamp = Date.now().toString(36).toUpperCase();
+                            const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
+                            const aoiCode = `AOI-${new Date().getFullYear()}-${timestamp}${randomSuffix}`;
 
                             const aoi = this.aoiRepository.create({
                                 aoi_name,
@@ -154,16 +156,10 @@ export class LocationsService {
 
         if (hasForms) {
             // Filter AOIs that have at least one photo with a filled form
+            // Using andWhere instead of where to preserve role filters
             query.innerJoin(Photo, 'photo', 'photo.aoi_id = aoi.id')
                 .innerJoin('photo.form', 'poi_form')
-                .where('poi_form.id IS NOT NULL');
-
-            // Re-apply role filter if it was overwritten by where
-            if (role === 'editor' && userId) {
-                query.andWhere('aoi.assigned_to_editor_id = :userId', { userId });
-            } else if (role === 'surveyor' && userId) {
-                query.andWhere('aoi.assigned_to_surveyor_id = :userId', { userId });
-            }
+                .andWhere('poi_form.id IS NOT NULL');
         }
 
         if (search) {

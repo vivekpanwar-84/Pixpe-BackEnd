@@ -59,6 +59,8 @@ export class AuthService {
         const user = await this.usersService.findByEmail(email);
         if (!user) throw new UnauthorizedException('User not found');
 
+        if (!user.is_active) throw new UnauthorizedException('Account is inactive');
+
         if (user.otp !== otp) throw new UnauthorizedException('Invalid OTP');
 
         if (!user.otp_expiry || new Date() > user.otp_expiry) {
@@ -69,7 +71,7 @@ export class AuthService {
         await this.usersService.update(user.id, {
             otp: null,
             otp_expiry: null,
-            is_email_verified: true, // Assuming email implies verified for now
+            is_email_verified: true,
             last_login_at: new Date()
         });
 
