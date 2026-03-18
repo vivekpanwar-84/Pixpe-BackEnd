@@ -51,6 +51,12 @@ export class AoiController {
     }
 
     // --- Verified: View Assigned AOIs (Surveyor/Editor) ---
+    @Get('my-stats')
+    @Roles(RoleSlug.SURVEYOR, RoleSlug.EDITOR)
+    getMyStats(@Req() req: any) {
+        return this.locationsService.getSurveyorStats(req.user.id);
+    }
+
     @Get('assigned')
     @Roles(RoleSlug.SURVEYOR, RoleSlug.EDITOR)
     findAssigned(
