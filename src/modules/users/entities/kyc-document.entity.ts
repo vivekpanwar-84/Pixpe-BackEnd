@@ -32,7 +32,7 @@ export class KycDocument extends BaseEntity {
     @Column({ type: 'varchar', length: 50 })
     document_type: string; // AADHAAR, PAN, DRIVING_LICENSE, VOTER_ID
 
-    @Column({ type: 'varchar', length: 50, unique: true })
+    @Column({ type: 'varchar', length: 50 })
     document_number: string;
 
     @Column({ type: 'varchar', length: 500, nullable: true })
@@ -44,7 +44,7 @@ export class KycDocument extends BaseEntity {
     @Column({ type: 'varchar', length: 500, nullable: true })
     selfie_url: string;
 
-    @Column({ type: 'varchar', length: 50, nullable: true, unique: true })
+    @Column({ type: 'varchar', length: 50, nullable: true })
     bank_account_number: string;
 
     @Column({ type: 'varchar', length: 20, nullable: true })
