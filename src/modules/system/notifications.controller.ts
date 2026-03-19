@@ -19,6 +19,16 @@ export class NotificationsController {
         return notifications;
     }
 
+    @Post('all/read')
+    async markAllAsRead(@Request() req: any) {
+        return this.notificationsService.markAllAsRead(req.user.id);
+    }
+
+    @Post('all/clear')
+    async clearAllNotifications(@Request() req: any) {
+        return this.notificationsService.clearAllNotifications(req.user.id);
+    }
+
     @Post(':id/read')
     async markAsRead(@Param('id') id: string) {
         return this.notificationsService.markAsRead(id);

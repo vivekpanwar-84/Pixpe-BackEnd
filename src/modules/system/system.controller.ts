@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, Req, UnauthorizedException } from '@nestjs/common';
 import { SystemService } from './services/system.service';
+import { NotificationsService } from './services/notifications.service';
 import { UpdateSystemSettingDto } from './dto/system.dto';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { RoleSlug } from '../../common/constants/roles.enum';
@@ -9,7 +10,10 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 @Controller('system')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class SystemController {
-    constructor(private readonly systemService: SystemService) {
+    constructor(
+        private readonly systemService: SystemService,
+        private readonly notificationsService: NotificationsService
+    ) {
         console.log('[SystemController] Initialized');
     }
 
@@ -24,6 +28,18 @@ export class SystemController {
     async getMyNotifications(@Req() req: any) {
         console.log(`[SystemController] Fetching notifications for user: ${req.user.id}`);
         return this.systemService.getMyNotifications(req.user.id);
+    }
+
+    @Post('notifications/all/read')
+    @UseGuards(JwtAuthGuard)
+    async markAllAsRead(@Req() req: any) {
+        return this.notificationsService.markAllAsRead(req.user.id);
+    }
+
+    @Post('notifications/all/clear')
+    @UseGuards(JwtAuthGuard)
+    async clearAllNotifications(@Req() req: any) {
+        return this.notificationsService.clearAllNotifications(req.user.id);
     }
 
     @Post('notifications/:id/read')

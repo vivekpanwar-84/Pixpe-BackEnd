@@ -53,4 +53,20 @@ export class NotificationsService {
             read_at: new Date(),
         });
     }
+
+    async markAllAsRead(userId: string) {
+        console.log(`[NotificationsService] Marking all notifications as read for user: ${userId}`);
+        return this.notificationRepository.update(
+            { user_id: userId, is_read: false },
+            {
+                is_read: true,
+                read_at: new Date(),
+            }
+        );
+    }
+
+    async clearAllNotifications(userId: string) {
+        console.log(`[NotificationsService] Clearing all notifications for user: ${userId}`);
+        return this.notificationRepository.delete({ user_id: userId });
+    }
 }

@@ -24,6 +24,70 @@ export class KycService {
             throw new BadRequestException('KYC is already approved');
         }
 
+        // --- Format Validation ---
+        const { document_type, document_number, bank_account_number, ifsc_code } = dto;
+
+        try {
+            if (document_type === 'AADHAAR') {
+                if (!/^\d{12}$/.test(document_number)) {
+                    throw new BadRequestException('Invalid Aadhaar format. Must be 12 digits.');
+                }
+            } else if (document_type === 'PAN') {
+                if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(document_number)) {
+                    throw new BadRequestException('Invalid PAN format. Example: ABCDE1234F');
+                }
+            } else if (document_type === 'DRIVING_LICENSE') {
+                if (!/^[A-Z]{2}[0-9]{2}[A-Z0-9]{11}$/.test(document_number)) {
+                    throw new BadRequestException('Invalid Driving License format. Standard 15 chars.');
+                }
+            } else if (document_type === 'VOTER_ID') {
+                if (!/^[A-Z]{3}[0-9]{7}$/.test(document_number)) {
+                    throw new BadRequestException('Invalid Voter ID format. Example: ABC1234567');
+                }
+            }
+
+            // --- Bank Validation ---
+            if (bank_account_number) {
+                if (!/^\d+$/.test(bank_account_number)) {
+                    throw new BadRequestException('Bank account number must contain only digits.');
+                }
+                if (bank_account_number.length < 9 || bank_account_number.length > 18) {
+                    throw new BadRequestException('Bank account number must be between 9 and 18 digits.');
+                }
+            }
+
+            if (ifsc_code) {
+                if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc_code)) {
+                    throw new BadRequestException('Invalid IFSC code format. Example: ABCD0123456');
+                }
+            }
+
+            // --- Uniqueness Checks ---
+            const existingDoc = await this.kycRepo.findOne({
+                where: { document_number }
+            });
+            if (existingDoc && existingDoc.user_id !== userId) {
+                throw new BadRequestException('This document number is already registered with another account.');
+            }
+
+            if (bank_account_number) {
+                const existingBank = await this.kycRepo.findOne({
+                    where: { bank_account_number }
+                });
+                if (existingBank && existingBank.user_id !== userId) {
+                    throw new BadRequestException('This bank account number is already registered.');
+                }
+            }
+        } catch (err: any) {
+            const fs = require('fs');
+            try {
+                fs.writeFileSync('C:\\Users\\vivek\\manual_errors_debug.json', JSON.stringify({ message: err.message, response: err.response, stack: err.stack }, null, 2));
+            } catch (fsErr) {
+                console.error('Failed to log manual validation error:', fsErr);
+            }
+            throw err;
+        }
+
         // Check if KYC document already exists for this user
         let kycDoc = await this.kycRepo.findOne({ where: { user_id: userId } });
         if (!kycDoc) {
