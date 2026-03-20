@@ -21,6 +21,7 @@
     "seed:roles": "npx ts-node src/seed/seed-roles.ts"
   },
   "dependencies": {
+    "@getbrevo/brevo": "^5.0.1",
     "@google/genai": "^1.42.0",
     "@google/generative-ai": "^0.24.1",
     "@nestjs/common": "^11.1.14",
